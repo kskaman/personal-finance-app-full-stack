@@ -34,7 +34,7 @@ export const signup = async (req, res) => {
 
     // 3. Generate verification token
     const verificationToken = crypto.randomBytes(32).toString("hex");
-    const verificationTokenExpiry = addHours(new Date(), 24); // Token valid for 24h
+    const verificationTokenExpiry = addHours(new Date(), 12); // Token valid for 12h
 
     // 4. Create user with default settings and balance
     const user = await prisma.user.create({
