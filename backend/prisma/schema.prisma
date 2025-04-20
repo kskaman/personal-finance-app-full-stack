@@ -1,0 +1,158 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native","linux-musl-openssl-3.0.x","debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// USER: Holds authentication and basic profile data.
+model User {
+  id         String         @id @default(uuid())
+  name       String
+  email      String         @unique
+  password   String
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  isVerified Boolean @default(false)
+  verificationToken String?
+  verificationTokenExpiry DateTime?
+  resetToken String?
+  resetTokenExpiry DateTime?
+  // One-to-one relationships
+  settings   Settings?
+  balance    Balance?
+
+  // One-to-many relationships
+  transactions  Transaction[]
+  budgets       Budget[]
+  pots          Pot[]
+  recurringBills RecurringBill[]
+  categories    Category[]
+}
+
+
+// SETTINGS: User-specific configuration.
+model Settings {
+  id                    String   @id @default(uuid())
+  userId                String   @unique
+  font                  Font
+  currency              Currency
+  displayedPots         Boolean
+  displayedRecurringBills Boolean
+  displayedBudgets      Boolean
+
+  user                  User     @relation(fields: [userId], references: [id])
+}
+
+
+// BALANCE: Stores a user's current balance data.
+model Balance {
+  id         String   @id @default(uuid())
+  userId     String   @unique
+  current    Float
+  income     Float
+  expenses   Float
+
+  user       User     @relation(fields: [userId], references: [id])
+}
+
+// TRANSACTION: A record for each transaction.
+model Transaction {
+  id          String   @id @default(uuid())
+  userId      String
+  avatar      String?
+  name        String
+  category    String
+  date        DateTime
+  theme       String
+  amount      Float
+  recurring   Boolean
+  recurringId String?
+  
+  user        User     @relation(fields: [userId], references: [id])
+}
+
+// BUDGET: A user’s budget information for a category.
+model Budget {
+  id         String   @id @default(uuid())
+  userId     String
+  category   String
+  maximum    Float
+  theme      String
+
+  user       User     @relation(fields: [userId], references: [id])
+}
+
+// POT: Savings or goal-oriented funds.
+model Pot {
+  id         String   @id @default(uuid())
+  userId     String
+  name       String
+  target     Float
+  total      Float
+  theme      String
+
+  user       User     @relation(fields: [userId], references: [id])
+}
+
+// RECURRING BILL: Bills or regular recurring expenses.
+model RecurringBill {
+  id         String   @id @default(uuid())
+  userId     String
+  avatar     String?
+  name       String
+  category   String
+  amount     Float
+  lastPaid   DateTime
+  dueDate    String
+  theme      String
+  recurring  Boolean  @default(true)
+
+  user       User     @relation(fields: [userId], references: [id])
+}
+
+// CATEGORY: Represents expense/income categories.
+// They can be global or user-specific.
+model Category {
+  id          String       @id @default(uuid())
+  userId      String
+  name        String
+  usedInBudgets Boolean
+  type        CategoryType
+
+  user        User         @relation(fields: [userId], references: [id])
+}
+
+
+// Enums for Settings options.
+enum Font {
+  public_sans
+  noto_serif
+  source_code
+}
+
+enum Currency {
+  us_dollar    // Represent "$"
+  cad_dollar  // Represent "C$"
+  euro      // Represent "€"
+  indian_rupees  // Represent "₹"
+  british_pound_sterling // Represent "£"
+  australian_dollar // Represent "A$"
+  chinese_yuan // Represent "¥"
+}
+
+enum CategoryType {
+  standard
+  custom
+}
+
+
