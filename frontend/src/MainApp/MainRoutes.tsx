@@ -1,13 +1,13 @@
 import { Navigate, Route, Routes } from "react-router";
 import MainLayout from "./MainLayout";
-import OverViewPage from "../overview/OverViewPage";
-import BillsPage from "../recurringBills/BillsPage";
-import BudgetsPage from "../budgets/BudgetsPage";
-import PotsPage from "../pots/PotsPage";
-import TransactionsPage from "../transactions/TransactionsPage";
-import SettingsPage from "../settings/SettingsPage";
+import OverViewPage from "../pages/overview/OverViewPage";
+import BillsPage from "../pages/recurringBills/BillsPage";
+import BudgetsPage from "../pages/budgets/BudgetsPage";
+import PotsPage from "../pages/pots/PotsPage";
+import TransactionsPage from "../pages/transactions/TransactionsPage";
+import SettingsPage from "../pages/settings/SettingsPage";
 import { useContext } from "react";
-import { SettingsContext } from "../context/SettingsContext";
+import { SettingsContext } from "../pages/settings/context/SettingsContext";
 
 const MainRoutes = () => {
   const { displayedModules } = useContext(SettingsContext);

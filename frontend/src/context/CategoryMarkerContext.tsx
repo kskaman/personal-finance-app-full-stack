@@ -1,5 +1,6 @@
 import { createContext } from "react";
-import { Category, MarkerTheme } from "../types/Data";
+import { MarkerTheme } from "../types/Data";
+import { Category } from "../types/models";
 
 interface CategoryMarkerContextProps {
   categories: Category[];

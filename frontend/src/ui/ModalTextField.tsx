@@ -6,7 +6,7 @@ import {
   useTheme,
 } from "@mui/material";
 import { useContext } from "react";
-import { SettingsContext } from "../context/SettingsContext";
+import { SettingsContext } from "../pages/settings/context/SettingsContext";
 
 interface CustomTextFieldProps {
   value: string;

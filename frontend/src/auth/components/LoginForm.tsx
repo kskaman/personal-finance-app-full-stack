@@ -1,17 +1,23 @@
 import { yupResolver } from "@hookform/resolvers/yup";
-import { lighten, Stack, Typography } from "@mui/material";
+import { Box, lighten, Stack, Typography } from "@mui/material";
 import { Controller, useForm } from "react-hook-form";
 import * as yup from "yup";
 import ModalTextField from "../../ui/ModalTextField";
 import Button from "../../ui/Button";
 
-import { useContext, useEffect } from "react";
-
 import PasswordTextField from "../../ui/PasswordTextField";
-import { AuthContext } from "../../context/AuthProvider";
 import { Link, useNavigate } from "react-router";
-import { grey500, grey900, white } from "../../theme/colors";
+import { warning, grey500, grey900, white } from "../../theme/colors";
 import SetTitle from "../../ui/SetTitle";
+import { useState } from "react";
+
+import {
+  login as loginApi,
+  me,
+  resendVerification,
+} from "../services/authService";
+import { useAuth } from "../hooks/useAuth";
+import { isAxiosError } from "axios";
 
 interface FormValues {
   email: string;
@@ -24,36 +30,62 @@ const buildSchema = () =>
     password: yup.string().required("Password is required"),
   });
 
-interface LoginFormProps {
-  userEmail?: string;
-  userPassword?: string;
-}
-
-const LoginForm = ({ userEmail, userPassword }: LoginFormProps) => {
-  const { login, loginError } = useContext(AuthContext);
+const LoginForm = () => {
   const navigate = useNavigate();
 
-  const { control, handleSubmit, trigger, reset } = useForm<FormValues>({
+  const [msg, setMsg] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [showVerifyLink, setShowVerifyLink] = useState(false);
+
+  const { setUser } = useAuth();
+
+  const {
+    control,
+    handleSubmit,
+    reset,
+    getValues,
+    formState: { isSubmitting },
+  } = useForm<FormValues>({
     resolver: yupResolver(buildSchema()),
     mode: "onSubmit",
+    reValidateMode: "onChange",
     defaultValues: {
-      email: userEmail || "",
-      password: userPassword || "",
+      email: "",
+      password: "",
     },
   });
 
-  // Reset form when props change
-  useEffect(() => {
-    reset({
-      email: userEmail || "",
-      password: userPassword || "",
-    });
-  }, [userEmail, userPassword, reset]);
-
   const onSubmit = async (data: FormValues) => {
-    const success = await login(data.email, data.password);
-    if (success) {
-      navigate("/");
+    setErrorMessage(null);
+    setShowVerifyLink(false);
+    setMsg(null);
+    try {
+      await loginApi(data);
+      const { data: user } = await me();
+      setUser(user);
+      navigate("/app/dashboard", { replace: true });
+    } catch (err) {
+      if (isAxiosError(err)) {
+        // backend sends { message: string }
+        setErrorMessage(err.response?.data?.message ?? "Server error");
+        // if 403 or 400 for unverified email:
+        if (err.response?.status === 403) {
+          setShowVerifyLink(true);
+        }
+      } else {
+        setErrorMessage("An unexpected error occurred");
+      }
+    }
+  };
+
+  const handleResend = async () => {
+    try {
+      await resendVerification(getValues("email"));
+      setShowVerifyLink(false);
+      setMsg("If your email is registered, a verification link has been sent.");
+      reset();
+    } catch {
+      setErrorMessage("Could not send verification email.");
     }
   };
 
@@ -63,11 +95,40 @@ const LoginForm = ({ userEmail, userPassword }: LoginFormProps) => {
       <Typography fontSize="32px" fontWeight="bold">
         Login
       </Typography>
-      {loginError && (
-        <Typography color="error" mb={2}>
-          {loginError}
-        </Typography>
-      )}
+
+      <Box height="56px">
+        {msg && (
+          <Typography fontSize="14px" align="center" color={warning}>
+            {msg}
+          </Typography>
+        )}
+        {errorMessage && (
+          <Typography fontSize="14px" align="center" color={warning}>
+            {errorMessage}
+          </Typography>
+        )}
+        {showVerifyLink && (
+          <Box
+            display="flex"
+            justifyContent="center"
+            alignItems="center"
+            sx={{
+              color: getValues("email") ? grey900 : grey500,
+              cursor: getValues("email") ? "pointer" : "not-allowed",
+              pointerEvents: getValues("email") ? "auto" : "none",
+              textDecoration: "underline",
+            }}
+            onClick={() => {
+              if (getValues("email")) {
+                handleResend();
+              }
+            }}
+          >
+            Resend verification email
+          </Box>
+        )}
+      </Box>
+
       <form onSubmit={handleSubmit(onSubmit)}>
         <Stack gap="20px">
           <Controller
@@ -77,12 +138,6 @@ const LoginForm = ({ userEmail, userPassword }: LoginFormProps) => {
               <ModalTextField
                 value={field.value}
                 onChange={field.onChange}
-                onBlur={() => {
-                  field.onBlur();
-                  if (field.value.trim() !== "") {
-                    trigger(field.name);
-                  }
-                }}
                 error={error}
                 label="Email"
                 placeholder=""
@@ -116,12 +171,13 @@ const LoginForm = ({ userEmail, userPassword }: LoginFormProps) => {
             hoverBgColor={lighten(grey900, 0.2)}
           >
             <Typography fontSize="14px" fontWeight="bold">
-              Login
+              {isSubmitting ? "..." : "Log in"}
             </Typography>
           </Button>
         </Stack>
       </form>
-      {/* “Forgot password?” */}
+
+      {/* "Forgot password?" */}
       <Stack gap={1} margin="auto" direction="row" alignItems="center">
         <Link to="/auth/forgot-password">
           <Typography

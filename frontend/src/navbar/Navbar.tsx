@@ -13,7 +13,7 @@ import BillsIcon from "../Icons/BillsIcon";
 import NavItem from "./NavItem";
 import MinimizeButton from "./MinimizeButton";
 import SettingsIcon from "../Icons/SettingsIcon";
-import { SettingsContext } from "../context/SettingsContext";
+import { SettingsContext } from "../pages/settings/context/SettingsContext";
 
 const Navbar = () => {
   const theme = useTheme();

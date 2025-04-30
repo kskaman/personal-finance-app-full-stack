@@ -1,13 +1,16 @@
-import { lighten, Stack, Typography } from "@mui/material";
+import { Box, lighten, Stack, Typography } from "@mui/material";
 import { Controller, useForm } from "react-hook-form";
 import ModalTextField from "../../ui/ModalTextField";
 import Button from "../../ui/Button";
 import { useState } from "react";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { green, grey500, grey900, white } from "../../theme/colors";
+import { grey500, grey900, white } from "../../theme/colors";
 import SetTitle from "../../ui/SetTitle";
 import { Link } from "react-router";
+import { isAxiosError } from "axios";
+
+import { forgotPassword as forgotApi } from "../services/authService";
 
 interface FormValues {
   email: string;
@@ -22,34 +25,60 @@ const buildSchema = () =>
   });
 
 const ForgotPasswordForm = () => {
-  const { control, handleSubmit } = useForm<FormValues>({
+  const {
+    control,
+    handleSubmit,
+    reset,
+    formState: { isSubmitting },
+  } = useForm<FormValues>({
     resolver: yupResolver(buildSchema()),
     mode: "onSubmit",
+    reValidateMode: "onChange",
     defaultValues: {
       email: "",
     },
   });
-  const [infoMessage, setInfoMessage] =
-    useState<string>(`This functionality is disabled.
-     This is just a frontend demo.
-     Please login with default credentials.`);
 
-  const onSubmit = (data: FormValues) => {
-    // Implement API call to send password email here.
-    setInfoMessage(
-      "This functionality is disabled. This is just a frontend demo. Please login with default credentials."
-    );
-    console.log(data);
+  const [message, setMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const onSubmit = async (data: FormValues) => {
+    setMessage(null);
+    setErrorMessage(null);
+    try {
+      const res = await forgotApi(data.email);
+      setMessage(res.data.message);
+      reset();
+    } catch (err) {
+      if (isAxiosError(err)) {
+        setErrorMessage(err.response?.data?.message ?? "Request failed");
+      } else {
+        setErrorMessage("An unexpected error occurred");
+      }
+    }
   };
 
   return (
     <>
       <SetTitle title={"Forgot Password"} />
-      {infoMessage && (
-        <Typography margin={"auto"} color={green}>
-          {infoMessage}
-        </Typography>
-      )}
+
+      <Typography fontSize="32px" fontWeight="bold">
+        Forgot Password
+      </Typography>
+
+      <Box height={"32px"} width={"100%"} mx="auto">
+        {message && (
+          <Typography fontSize="14px" align="center" color="green">
+            {message}
+          </Typography>
+        )}
+        {errorMessage && (
+          <Typography fontSize="14px" align="center" color="warning">
+            {errorMessage}
+          </Typography>
+        )}
+      </Box>
+
       <form onSubmit={handleSubmit(onSubmit)}>
         <Stack gap="20px">
           <Controller
@@ -78,10 +107,9 @@ const ForgotPasswordForm = () => {
             color={white}
             hoverColor={white}
             hoverBgColor={lighten(grey900, 0.2)}
-            isDisabled={true}
           >
             <Typography fontSize="14px" fontWeight="bold">
-              Request Password
+              {isSubmitting ? "Sending..." : "Send Reset Link"}
             </Typography>
           </Button>
         </Stack>

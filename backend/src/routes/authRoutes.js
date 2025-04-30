@@ -1,26 +1,56 @@
 import express from "express";
 import rateLimit from "express-rate-limit";
+import RedisStore from "rate-limit-redis";
+import redis from "../redisClient.js";
 import { body } from "express-validator";
+
 import {
   signup,
   verifyEmail,
   login,
   forgotPassword,
   resetPassword,
+  getCurrentUser,
+  resendVerification,
+  verifyReset,
 } from "../controllers/authController.js";
+import { authenticate } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
-// Limit login attempts: max 5 per hour
+// ——— Specific rate limiters ———
+// throttle login attempts
 const loginLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 20,
-  message: { error: "Too many login attempts. Try again in an hour." },
+  store: new RedisStore({
+    sendCommand: (...args) => redis.sendCommand(args),
+  }),
+  message: { message: "Too many attempts. Try again in an hour." },
 });
 
-// Validation chains
+// throttle sign-ups (optional, e.g. 5 per hour)
+const signupLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  message: { message: "Too many requests. Try again later." },
+  store: new RedisStore({
+    sendCommand: (...args) => redis.sendCommand(args),
+  }),
+});
+
+// throttle password resets (optional, e.g. 5 per hour)
+const passwordResetLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  store: new RedisStore({
+    sendCommand: (...args) => redis.sendCommand(args),
+  }),
+  message: { message: "Too many requests. Try again later." },
+});
+
+// ——— Validation chains ———
 const validateSignup = [
-  body("name").trim().notEmpty().withMessage("Name is required"),
   body("email").isEmail().withMessage("Enter a valid email"),
   body("password")
     .isLength({ min: 8, max: 20 })
@@ -28,7 +58,7 @@ const validateSignup = [
     .withMessage("Password must meet complexity requirements"),
 ];
 
-const validateEmailOnly = [
+const validateEmail = [
   body("email").isEmail().withMessage("Enter a valid email"),
 ];
 
@@ -44,17 +74,50 @@ const validateReset = [
     .withMessage("Password must meet complexity requirements"),
 ];
 
-// Routes
-router.post("/signup", validateSignup, signup);
-router.post("/verify-email", validateToken, verifyEmail);
+// ——— Routes ———
+
+// Public endpoints
+router.post("/signup", signupLimiter, validateSignup, signup);
+router.get("/verify-email", verifyEmail);
+router.post(
+  "/resend-verification",
+  loginLimiter,
+  validateEmail,
+  resendVerification
+);
 router.post(
   "/login",
-  validateEmailOnly.concat(
+  loginLimiter,
+  validateEmail.concat(
     body("password").notEmpty().withMessage("Password is required")
   ),
   login
 );
-router.post("/forgot-password", validateEmailOnly, forgotPassword);
-router.post("/reset-password", validateReset, resetPassword);
+router.post(
+  "/forgot-password",
+  passwordResetLimiter,
+  validateEmail,
+  forgotPassword
+);
+
+router.get("/verify-reset", verifyReset);
+
+router.post(
+  "/reset-password",
+  passwordResetLimiter,
+  validateReset,
+  resetPassword
+);
+
+// Protected endpoints
+router.get("/users/me", authenticate, getCurrentUser);
+
+// Logout
+router.post("/logout", authenticate, async (req, res) => {
+  const sid = req.cookies.sid;
+  if (sid) await redis.del(`SESSION:${sid}`);
+  res.clearCookie("sid", { httpOnly: true, sameSite: "lax" });
+  res.json({ message: "Logged out" });
+});
 
 export default router;

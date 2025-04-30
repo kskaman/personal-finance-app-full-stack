@@ -1,4 +1,5 @@
-import { MarkerTheme, Pot } from "../types/Data";
+import { MarkerTheme } from "../types/Data";
+import { Pot } from "../types/models";
 
 export const updateUsedStatuses = (
   pots: Pot[],

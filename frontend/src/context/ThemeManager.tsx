@@ -1,7 +1,7 @@
 import { ReactNode, useContext, useMemo } from "react";
 import { ThemeProvider } from "@mui/material/styles";
-import { SettingsContext } from "./SettingsContext";
 import { createDynamicTheme } from "../theme/createDynamicTheme";
+import { SettingsContext } from "../pages/settings/context/SettingsContext";
 
 export const ThemeManager = ({ children }: { children: ReactNode }) => {
   const { selectedFont } = useContext(SettingsContext);

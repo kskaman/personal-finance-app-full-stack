@@ -3,24 +3,29 @@ import LoginForm from "./components/LoginForm";
 import SignupForm from "./components/SignupForm";
 import ForgotPasswordForm from "./components/ForgotPasswordForm";
 import AuthPage from "./AuthPage";
+import ResetPasswordForm from "./components/ResetPasswordForm";
 
 const AuthRoutes = () => (
   <Routes>
-    {/* default => /auth  (index route) */}
+    {/* 
+        This Route now matches exactly "/auth/*" 
+        because AuthRoutes is mounted at "auth/*" in App.tsx
+      */}
     <Route path="" element={<AuthPage />}>
-      <Route index element={<Navigate to="login" />} />
+      {/* /auth        → /auth/login */}
+      <Route index element={<Navigate to="login" replace />} />
 
-      {/* explicit /auth/login (optional but nice) */}
-      <Route
-        path="login"
-        element={
-          <LoginForm userEmail="john@example.com" userPassword="johnPass#1" />
-        }
-      />
+      {/* /auth/login */}
+      <Route path="login" element={<LoginForm />} />
 
+      {/* /auth/signup */}
       <Route path="signup" element={<SignupForm />} />
 
+      {/* /auth/forgot-password */}
       <Route path="forgot-password" element={<ForgotPasswordForm />} />
+
+      {/* /auth/reset-password */}
+      <Route path="reset-password" element={<ResetPasswordForm />} />
     </Route>
   </Routes>
 );

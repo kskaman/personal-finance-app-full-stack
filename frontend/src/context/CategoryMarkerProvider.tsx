@@ -1,6 +1,7 @@
 import { ReactNode, useState } from "react";
-import { Category, MarkerTheme } from "../types/Data";
+import { MarkerTheme } from "../types/Data";
 import CategoryMarkerContext from "./CategoryMarkerContext";
+import { Category } from "../types/models";
 
 interface CategoryMarkerProviderProps {
   categories: Category[];

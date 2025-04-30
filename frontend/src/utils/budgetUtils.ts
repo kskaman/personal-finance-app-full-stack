@@ -1,5 +1,5 @@
-// utils/budgetUtils.ts
-import { Budget, Category, MarkerTheme } from "../types/Data";
+import { MarkerTheme } from "../types/Data";
+import { Budget, Category } from "../types/models";
 
 export const updateUsedStatuses = (
   budgets: Budget[],

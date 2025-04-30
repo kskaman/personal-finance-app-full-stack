@@ -1,17 +1,15 @@
 import { Routes, Route, Navigate } from "react-router";
-import { useContext } from "react";
-import { AuthContext } from "./context/AuthProvider";
+
 import DataProvider from "./context/DataProvider";
-import LoadingIndicator from "./ui/LoadingIndicator";
 
 import MainRoutes from "./MainApp/MainRoutes";
 import AuthRoutes from "./auth/AuthRoutes";
 import NotFoundPage from "./NotFoundPage";
+import ProtectedRoute from "./components/ProtectedRoutes";
+import { useAuth } from "./auth/hooks/useAuth";
 
 const App = () => {
-  const { user, loading } = useContext(AuthContext);
-
-  if (loading) return <LoadingIndicator />;
+  const { user } = useAuth();
 
   return (
     <Routes>
@@ -23,8 +21,6 @@ const App = () => {
         }
       />
 
-      {!user && <Route path="/auth/*" element={<AuthRoutes />} />}
-
       {/* ---- AUTH ---- */}
       {!user && <Route path="/auth/*" element={<AuthRoutes />} />}
 
@@ -33,9 +29,11 @@ const App = () => {
         <Route
           path="/app/*"
           element={
-            <DataProvider>
-              <MainRoutes />
-            </DataProvider>
+            <ProtectedRoute>
+              <DataProvider>
+                <MainRoutes />
+              </DataProvider>
+            </ProtectedRoute>
           }
         />
       )}

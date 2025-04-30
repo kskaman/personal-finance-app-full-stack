@@ -7,7 +7,7 @@ import PotsIcon from "../Icons/PotsIcon";
 import BillsIcon from "../Icons/BillsIcon";
 import SettingsIcon from "../Icons/SettingsIcon";
 import { useContext } from "react";
-import { SettingsContext } from "../context/SettingsContext";
+import { SettingsContext } from "../pages/settings/context/SettingsContext";
 
 interface TabNavBarProps {
   isMobile: boolean;

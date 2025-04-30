@@ -5,7 +5,8 @@ dotenv.config();
 const transporter = nodemailer.createTransport({
   host: process.env.EMAIL_HOST,
   port: Number(process.env.EMAIL_PORT),
-  secure: process.env.secure,
+  secure: false,
+  requireTLS: true,
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS,
@@ -15,7 +16,7 @@ const transporter = nodemailer.createTransport({
 export async function sendEmail({ to, subject, html }) {
   try {
     const info = await transporter.sendMail({
-      from: `Personal Finance App`,
+      from: `"Personal Finance App" <${process.env.EMAIL_USER}>`,
       to,
       subject,
       html,
