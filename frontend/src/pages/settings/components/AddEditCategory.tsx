@@ -4,11 +4,11 @@ import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useContext, useEffect } from "react";
 import CategoryMarkerContext from "../../../context/CategoryMarkerContext";
-import { Category } from "../../../types/Data";
 import { lighten, Stack, Typography, useTheme } from "@mui/material";
 import Button from "../../../ui/Button";
 import ActionModal from "../../../ui/ActionModal";
 import ModalTextField from "../../../ui/ModalTextField";
+import { Category } from "../../../types/models";
 
 // Interface and Props
 interface FormValues {

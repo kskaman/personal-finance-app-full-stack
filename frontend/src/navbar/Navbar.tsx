@@ -62,7 +62,7 @@ const Navbar = () => {
           text="Transactions"
           isMinimized={isMinimized}
         />
-        {displayedModules.budgets.using && (
+        {displayedModules.budgets && (
           <NavItem
             to="/app/budgets"
             Icon={BudgetsIcon}
@@ -70,7 +70,7 @@ const Navbar = () => {
             isMinimized={isMinimized}
           />
         )}
-        {displayedModules.pots.using && (
+        {displayedModules.pots && (
           <NavItem
             to="/app/pots"
             Icon={PotsIcon}
@@ -78,7 +78,7 @@ const Navbar = () => {
             isMinimized={isMinimized}
           />
         )}
-        {displayedModules.recurringBills.using && (
+        {displayedModules.bills && (
           <NavItem
             to="/app/bills"
             Icon={BillsIcon}

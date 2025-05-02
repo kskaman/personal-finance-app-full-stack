@@ -42,9 +42,9 @@ export const signup = async (req, res) => {
           create: {
             font: "public_sans",
             currency: "us_dollar",
-            displayedPots: true,
-            displayedRecurringBills: true,
-            displayedBudgets: true,
+            pots: true,
+            bills: true,
+            budgets: true,
           },
         },
         balance: {

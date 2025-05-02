@@ -1,5 +1,6 @@
 import { createContext } from "react";
-import { Currency, DisplayedModules, Font } from "../../../types/models";
+import { Currency, Font } from "../../../types/models";
+import { DisplayedModules } from "../../../types/Data";
 
 export interface SettingsContextType {
   selectedFont: Font;
@@ -16,9 +17,9 @@ export const SettingsContext = createContext<SettingsContextType>({
   selectedCurrency: Currency.us_dollar,
   setSelectedCurrency: () => {},
   displayedModules: {
-    pots: { label: "Pots", using: true },
-    recurringBills: { label: "Recurring Bills", using: true },
-    budgets: { label: "Budgets", using: true },
+    pots: true,
+    bills: true,
+    budgets: true,
   },
   setDisplayedModules: () => {},
 });

@@ -17,7 +17,7 @@ datasource db {
 // USER: Holds authentication and basic profile data.
 model User {
   id         String         @id @default(uuid())
-  name       String
+  name       String?
   email      String         @unique
   password   String
   createdAt  DateTime       @default(now())
@@ -46,9 +46,9 @@ model Settings {
   userId                String   @unique
   font                  Font
   currency              Currency
-  displayedPots         Boolean
-  displayedRecurringBills Boolean
-  displayedBudgets      Boolean
+  pots         Boolean
+  bills        Boolean
+  budgets      Boolean
 
   user                  User     @relation(fields: [userId], references: [id])
 }

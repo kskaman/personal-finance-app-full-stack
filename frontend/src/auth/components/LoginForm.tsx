@@ -63,7 +63,7 @@ const LoginForm = () => {
       await loginApi(data);
       const { data: user } = await me();
       setUser(user);
-      navigate("/app/dashboard", { replace: true });
+      navigate("/app/overview", { replace: true });
     } catch (err) {
       if (isAxiosError(err)) {
         // backend sends { message: string }

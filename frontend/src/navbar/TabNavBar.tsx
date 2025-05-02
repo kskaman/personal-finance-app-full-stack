@@ -42,7 +42,7 @@ const TabNavBar = ({ isMobile }: TabNavBarProps) => {
         text="Transactions"
         isMobile={isMobile}
       />
-      {displayedModules.budgets.using && (
+      {displayedModules.budgets && (
         <TabNavItem
           to="/app/budgets"
           Icon={BudgetsIcon}
@@ -51,7 +51,7 @@ const TabNavBar = ({ isMobile }: TabNavBarProps) => {
         />
       )}
 
-      {displayedModules.pots.using && (
+      {displayedModules.pots && (
         <TabNavItem
           to="/app/pots"
           Icon={PotsIcon}
@@ -60,7 +60,7 @@ const TabNavBar = ({ isMobile }: TabNavBarProps) => {
         />
       )}
 
-      {displayedModules.recurringBills.using && (
+      {displayedModules.bills && (
         <TabNavItem
           to="/app/bills"
           Icon={BillsIcon}

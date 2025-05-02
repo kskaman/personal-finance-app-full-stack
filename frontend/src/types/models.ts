@@ -23,16 +23,14 @@ export enum Font {
 
   
 // Models
-export interface DisplayedModules {
-  pots: { label: string;  using: boolean};
-  recurringBills: { label: string;  using: boolean};
-  budgets: { label: string;  using: boolean};
-}
+
 
   export interface Settings {
     font: Font;
     currency: Currency;
-    displayedModules: DisplayedModules;
+    pots: boolean;
+    bills: boolean;
+    budgets: boolean;
   }
   
   export interface Balance {
@@ -47,7 +45,7 @@ export interface DisplayedModules {
     avatar?: string;
     name: string;
     category: string;
-    date: string;
+    date: Date;
     theme: string;
     amount: number;
     recurring: boolean;
@@ -78,7 +76,7 @@ export interface DisplayedModules {
     name: string;
     category: string;
     amount: number;
-    lastPaid: string;
+    lastPaid: Date;
     dueDate: string;
     theme: string;
     recurring: boolean;
@@ -95,7 +93,7 @@ export interface DisplayedModules {
   // User (as returned by backend /auth/me or /user/data)
   export interface User {
     id: string;
-    name: string;
+    name?: string;
     email: string;
     isVerified: boolean;
   
@@ -108,18 +106,5 @@ export interface DisplayedModules {
     pots?: Pot[];
     recurringBills?: RecurringBill[];
     categories?: Category[];
-  }
-  
-  // Full app data structure (used in DataProvider)
-  export interface DataType {
-    userId: string;
-    balance: Balance;
-    settings: Settings;
-    transactions: Transaction[];
-    budgets: Budget[];
-    pots: Pot[];
-    recurringBills: RecurringBill[];
-    categories: Category[];
-    markerThemes: string[];
   }
   

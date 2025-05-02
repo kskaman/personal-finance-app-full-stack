@@ -1,3 +1,5 @@
+import { ReactNode } from "react";
+
 import { Balance, Budget, Category, Pot, RecurringBill, Settings, Transaction } from "./models";
 
 
@@ -26,5 +28,21 @@ export interface DataType {
     categories: Category[];
     markerThemes: MarkerTheme[];
   }
+
   
+
+  // Option Data type for Settings font and currency options
+  export interface SettingsRadioOption {
+      value: string;
+      symbol: ReactNode;
+      label: ReactNode;
+  }
+  
+
+  // types/displayedModules.ts
+export interface DisplayedModules {
+    pots: boolean;
+    bills: boolean;
+    budgets: boolean;
+  }
   

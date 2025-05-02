@@ -8,7 +8,6 @@ import CategoryMarkerProvider from "./CategoryMarkerProvider";
 import { SettingsProvider } from "../pages/settings/context/SettingsProvider";
 import Loader from "../ui/Loader";
 import { getUserData } from "../services/userService";
-import { Currency, Font } from "../types/models";
 
 // Interface and main component
 interface DataProviderProps {
@@ -25,18 +24,16 @@ const DataProvider = ({ children }: DataProviderProps) => {
     const fetchUserData = async () => {
       try {
         const user = await getUserData();
-
+        console.log(user);
         const constructed: DataType = {
           userId: user.id,
-          balance: user.balance ?? { current: 0, income: 0, expenses: 0 },
-          settings: user.settings ?? {
-            font: Font.public_sans,
-            currency: Currency.us_dollar,
-            displayedModules: {
-              displayedPots: true,
-              displayedRecurringBills: true,
-              displayedBudgets: true,
-            },
+          balance: user.balance,
+          settings: {
+            font: user.settings.font,
+            currency: user.settings.currency,
+            pots: user.settings.pots,
+            bills: user.settings.bills,
+            budgets: user.settings.budgets,
           },
           transactions: user.transactions ?? [],
           budgets: user.budgets ?? [],
@@ -83,7 +80,9 @@ const DataProvider = ({ children }: DataProviderProps) => {
     <SettingsProvider
       font={data.settings.font}
       currency={data.settings.currency}
-      displayedModules={data.settings.displayedModules}
+      pots={data.settings.pots}
+      bills={data.settings.bills}
+      budgets={data.settings.budgets}
     >
       <CategoryMarkerProvider
         categories={data.categories}

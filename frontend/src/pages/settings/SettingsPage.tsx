@@ -4,10 +4,7 @@ import Button from "../../ui/Button";
 import SetTitle from "../../ui/SetTitle";
 import LogoutIcon from "../../Icons/LogoutIcon";
 import SubContainer from "../../ui/SubContainer";
-import {
-  DisplayedModules,
-  SettingsRadioOption,
-} from "../../types/settingsData";
+
 import SettingsOptionGroup from "./components/SettingsOptionGroup";
 import useParentWidth from "../../customHooks/useParentWidth";
 import { useContext } from "react";
@@ -20,6 +17,7 @@ import DeleteAccount from "./components/DeleteAccount";
 import { logoutUser } from "../../services/userService";
 import { SettingsContext } from "./context/SettingsContext";
 import { Currency, Font } from "../../types/models";
+import { DisplayedModules, SettingsRadioOption } from "../../types/Data";
 
 const SettingsPage = () => {
   const theme = useTheme();
@@ -39,10 +37,7 @@ const SettingsPage = () => {
   const handleModuleToggle = (moduleKey: keyof DisplayedModules) => {
     setDisplayedModules((prev: DisplayedModules) => ({
       ...prev,
-      [moduleKey]: {
-        ...prev[moduleKey],
-        using: !prev[moduleKey].using,
-      },
+      [moduleKey]: !prev[moduleKey],
     }));
   };
 
@@ -227,9 +222,9 @@ const SettingsPage = () => {
               padding="16px"
               backgroundColor={theme.palette.primary.main}
               color={theme.palette.text.primary}
-              onClick={() => {
+              onClick={async () => {
+                await logoutUser();
                 navigate("/auth/login");
-                logoutUser();
               }}
               hoverColor={theme.palette.text.primary}
               hoverBgColor={theme.palette.primary.light}
@@ -272,6 +267,7 @@ const SettingsPage = () => {
                 parentWidth={parentWidth}
               />
             </SubContainer>
+
             <SubContainer>
               <SettingsOptionGroup
                 heading="Currency Symbol"
@@ -290,7 +286,6 @@ const SettingsPage = () => {
             {/* Display Modules Group */}
             <SubContainer>
               <DisplayModulesGroup
-                heading="Display Features"
                 displayOptions={displayedModules}
                 onChange={handleModuleToggle}
                 parentWidth={parentWidth}

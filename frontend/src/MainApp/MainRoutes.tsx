@@ -18,15 +18,13 @@ const MainRoutes = () => {
         <Route index element={<Navigate to="overview" />} />
         <Route path="overview" element={<OverViewPage />} />
         {/* Only allow access to BudgetsPage if the module is enabled */}
-        {displayedModules.budgets.using && (
+        {displayedModules.budgets && (
           <Route path="budgets" element={<BudgetsPage />} />
         )}
         {/* Only allow access to PotsPage if the module is enabled */}
-        {displayedModules.pots.using && (
-          <Route path="pots" element={<PotsPage />} />
-        )}
+        {displayedModules.pots && <Route path="pots" element={<PotsPage />} />}
         {/* Only allow access to BillsPage if the module is enabled */}
-        {displayedModules.recurringBills.using && (
+        {displayedModules.bills && (
           <Route path="bills" element={<BillsPage />} />
         )}
         <Route path="transactions" element={<TransactionsPage />} />
