@@ -10,7 +10,7 @@ import SetTitle from "../../ui/SetTitle";
 import { Link } from "react-router";
 import { isAxiosError } from "axios";
 
-import { forgotPassword as forgotApi } from "../services/authService";
+import { forgotPassword as forgotApi } from "../../services/authService";
 
 interface FormValues {
   email: string;

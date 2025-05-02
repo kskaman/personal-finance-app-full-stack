@@ -22,7 +22,7 @@ const router = express.Router();
 // throttle login attempts
 const loginLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
-  max: 20,
+  max: 15,
   store: new RedisStore({
     sendCommand: (...args) => redis.sendCommand(args),
   }),
@@ -32,8 +32,8 @@ const loginLimiter = rateLimit({
 // throttle sign-ups (optional, e.g. 5 per hour)
 const signupLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
-  max: 5,
-  message: { message: "Too many requests. Try again later." },
+  max: 10,
+  message: { message: "Too many requests. Try again in an hour." },
   store: new RedisStore({
     sendCommand: (...args) => redis.sendCommand(args),
   }),
@@ -42,11 +42,11 @@ const signupLimiter = rateLimit({
 // throttle password resets (optional, e.g. 5 per hour)
 const passwordResetLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
-  max: 5,
+  max: 10,
   store: new RedisStore({
     sendCommand: (...args) => redis.sendCommand(args),
   }),
-  message: { message: "Too many requests. Try again later." },
+  message: { message: "Too many requests.  Try again in an hour." },
 });
 
 // ——— Validation chains ———

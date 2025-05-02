@@ -1,15 +1,14 @@
-import { useSearchParams } from "react-router";
-import { Stack, Typography } from "@mui/material";
+import { useNavigate, useSearchParams } from "react-router";
+import { Box, Stack, Typography } from "@mui/material";
 import { useState } from "react";
 import { api } from "../../api/api";
 import { useForm, Controller } from "react-hook-form";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
 import Button from "../../ui/Button";
-import { grey500, grey900, white } from "../../theme/colors";
+import { grey500, grey900, warning, white } from "../../theme/colors";
 import { lighten } from "@mui/material";
 import { AxiosError } from "axios";
-import { Link } from "react-router";
 import PasswordTextField from "../../ui/PasswordTextField";
 
 const passwordRegex =
@@ -32,10 +31,12 @@ const schema = yup.object({
 });
 
 const ResetPasswordForm = () => {
-  const [params] = useSearchParams();
-  const token = params.get("token");
-  const [msg, setMsg] = useState("");
+  const navigate = useNavigate();
 
+  const [params] = useSearchParams();
+  const sid = params.get("sid");
+  const [msg, setMsg] = useState<string | null>("");
+  const [errorMsg, setErrorMsg] = useState<string | null>("");
   const {
     control,
     handleSubmit,
@@ -51,15 +52,17 @@ const ResetPasswordForm = () => {
   });
 
   const onSubmit = async (data: FormValues) => {
+    setMsg(null);
+    setErrorMsg(null);
     try {
       await api.post("/auth/reset-password", {
-        token,
+        sid,
         newPassword: data.password,
       });
       setMsg("Password reset successful. You can now log in.");
     } catch (err) {
       const error = err as AxiosError<{ message: string }>;
-      setMsg(error.response?.data?.message ?? "Reset failed");
+      setErrorMsg(error.response?.data?.message ?? "Reset failed");
     }
   };
 
@@ -68,6 +71,19 @@ const ResetPasswordForm = () => {
       <Typography fontSize="32px" fontWeight="bold">
         Reset Password
       </Typography>
+      <Box height="56px">
+        {msg && (
+          <Typography fontSize="14px" align="center" color={warning}>
+            {msg}
+          </Typography>
+        )}
+        {errorMsg && (
+          <Typography fontSize="14px" align="center" color={warning}>
+            {errorMsg}
+          </Typography>
+        )}
+      </Box>
+
       <form onSubmit={handleSubmit(onSubmit)}>
         <Stack gap={2}>
           <Controller
@@ -116,11 +132,6 @@ const ResetPasswordForm = () => {
               {isSubmitting ? "Submitting..." : "Submit"}
             </Typography>
           </Button>
-          {msg && (
-            <Typography textAlign="center" color={grey900}>
-              {msg}
-            </Typography>
-          )}
         </Stack>
       </form>
 
@@ -129,15 +140,14 @@ const ResetPasswordForm = () => {
         <Typography fontSize="14px" color={grey500}>
           Go to
         </Typography>
-        <Link to="/auth/login">
-          <Typography
-            fontWeight="bold"
-            color={grey900}
-            sx={{ textDecoration: "underline" }}
-          >
-            Log In
-          </Typography>
-        </Link>
+        <Typography
+          onClick={() => navigate("/auth/login", { replace: true })}
+          fontWeight="bold"
+          color={grey900}
+          sx={{ textDecoration: "underline" }}
+        >
+          Log In
+        </Typography>
       </Stack>
     </>
   );

@@ -10,7 +10,7 @@ import PasswordTextField from "../../ui/PasswordTextField";
 import SetTitle from "../../ui/SetTitle";
 import { Link } from "react-router";
 
-import { signup as signupApi } from "../services/authService";
+import { signup as signupApi } from "../../services/authService";
 import { isAxiosError } from "axios";
 
 interface FormValues {

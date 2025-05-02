@@ -15,7 +15,7 @@ import {
   login as loginApi,
   me,
   resendVerification,
-} from "../services/authService";
+} from "../../services/authService";
 import { useAuth } from "../hooks/useAuth";
 import { isAxiosError } from "axios";
 

@@ -14,10 +14,11 @@ import UserAccountInfo from "./components/UserAccountInfo";
 import { useNavigate } from "react-router";
 import DeleteAccount from "./components/DeleteAccount";
 
-import { logoutUser } from "../../services/userService";
+import { logoutUser } from "../../services/authService";
 import { SettingsContext } from "./context/SettingsContext";
 import { Currency, Font } from "../../types/models";
 import { DisplayedModules, SettingsRadioOption } from "../../types/Data";
+import { useAuth } from "../../auth/hooks/useAuth";
 
 const SettingsPage = () => {
   const theme = useTheme();
@@ -32,6 +33,8 @@ const SettingsPage = () => {
   } = useContext(SettingsContext);
 
   const navigate = useNavigate();
+
+  const { setUser } = useAuth();
 
   // Handler to toggle the "using" property for a given module.
   const handleModuleToggle = (moduleKey: keyof DisplayedModules) => {
@@ -224,7 +227,8 @@ const SettingsPage = () => {
               color={theme.palette.text.primary}
               onClick={async () => {
                 await logoutUser();
-                navigate("/auth/login");
+                setUser(null);
+                navigate("/auth/login", { replace: true });
               }}
               hoverColor={theme.palette.text.primary}
               hoverBgColor={theme.palette.primary.light}

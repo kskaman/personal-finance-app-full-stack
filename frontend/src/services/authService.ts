@@ -1,4 +1,4 @@
-import { api } from "../../api/api.ts";
+import { api } from "../api/api.ts";
 
 export const signup =
     (params: { email: string, password: string }) =>
@@ -17,5 +17,10 @@ export const resetPassword =
 
 export const resendVerification = (email: string) => 
     api.post("/auth/resend-verification", { email })
+
+export const logoutUser = async (): Promise<void> => {
+    await api.post("/auth/logout");
+  };
+  
 
 export const me = () => api.get("/auth/users/me");
