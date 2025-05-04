@@ -1,6 +1,4 @@
 import express from "express";
-import rateLimit from "express-rate-limit";
-import RedisStore from "rate-limit-redis";
 import redis from "../redisClient.js";
 import { body } from "express-validator";
 
@@ -18,37 +16,6 @@ import {
 import { authenticate } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
-
-// ——— Specific rate limiters ———
-// throttle login attempts
-const loginLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000,
-  max: 15,
-  store: new RedisStore({
-    sendCommand: (...args) => redis.sendCommand(args),
-  }),
-  message: { message: "Too many attempts. Try again in an hour." },
-});
-
-// throttle sign-ups (optional, e.g. 5 per hour)
-const signupLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000,
-  max: 10,
-  message: { message: "Too many requests. Try again in an hour." },
-  store: new RedisStore({
-    sendCommand: (...args) => redis.sendCommand(args),
-  }),
-});
-
-// throttle password resets (optional, e.g. 5 per hour)
-const passwordResetLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000,
-  max: 10,
-  store: new RedisStore({
-    sendCommand: (...args) => redis.sendCommand(args),
-  }),
-  message: { message: "Too many requests.  Try again in an hour." },
-});
 
 // ——— Validation chains ———
 const validateSignup = [
@@ -78,37 +45,21 @@ const validateReset = [
 // ——— Routes ———
 
 // Public endpoints
-router.post("/signup", signupLimiter, validateSignup, signup);
+router.post("/signup", validateSignup, signup);
 router.get("/verify-email", verifyEmail);
-router.post(
-  "/resend-verification",
-  loginLimiter,
-  validateEmail,
-  resendVerification
-);
+router.post("/resend-verification", validateEmail, resendVerification);
 router.post(
   "/login",
-  loginLimiter,
   validateEmail.concat(
     body("password").notEmpty().withMessage("Password is required")
   ),
   login
 );
-router.post(
-  "/forgot-password",
-  passwordResetLimiter,
-  validateEmail,
-  forgotPassword
-);
+router.post("/forgot-password", validateEmail, forgotPassword);
 
 router.get("/verify-reset", verifyReset);
 
-router.post(
-  "/reset-password",
-  passwordResetLimiter,
-  validateReset,
-  resetPassword
-);
+router.post("/reset-password", validateReset, resetPassword);
 
 // Protected endpoints
 router.get("/users/me", authenticate, getCurrentUser);

@@ -1,7 +1,6 @@
 services:
   cache:
     image: redis:7-alpine
-    container_name: financeApp-cache
     restart: always
     ports:
       - "6379:6379"
@@ -36,6 +35,7 @@ services:
   app:
     build: .
     container_name: financeApp
+    command: npm run dev
     env_file:
       - .env
     environment:
