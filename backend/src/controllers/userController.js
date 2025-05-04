@@ -19,10 +19,6 @@ export const getUserData = async (req, res) => {
       include: {
         settings: true,
         balance: true,
-        transactions: true,
-        budgets: true,
-        pots: true,
-        recurringBills: true,
         categories: true,
       },
     });
