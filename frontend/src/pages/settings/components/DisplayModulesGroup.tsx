@@ -38,15 +38,11 @@ const DisplayModulesGroup = ({
 
   const { isOpen, openModal, closeModal } = useModal();
 
-  // When a tile is clicked, check if it's currently enabled
-  // If enabled (using is true), then we show the modal before unchecking
-  // Otherwise, if it's not enabled, then toggle directly.
   const handleTileClick = (key: keyof DisplayedModules) => {
     if (displayOptions[key]) {
       setSelectedModuleKey(key);
       openModal();
     } else {
-      // Directly toggle if user is checking the module
       onChange(key);
     }
   };
@@ -101,7 +97,7 @@ const DisplayModulesGroup = ({
                   onClick={() => handleTileClick(key as keyof DisplayedModules)}
                 >
                   <Typography color={theme.palette.primary.light}>
-                    {key}
+                    {moduleLabels[k]}
                   </Typography>
                   <FormControlLabel
                     control={

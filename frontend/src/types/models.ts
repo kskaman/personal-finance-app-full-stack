@@ -1,18 +1,18 @@
 // Enums matching Prisma
 export enum Font {
-    public_sans = "public_sans",
-    noto_serif = "noto_serif",
-    source_code = "source_code",
+    public_sans = "public-sans",
+    noto_serif = "noto-serif",
+    source_code = "source-code",
   }
   
   export enum Currency {
-    us_dollar = "us_dollar",
-    cad_dollar = "cad_dollar",
-    euro = "euro",
-    indian_rupees = "indian_rupees",
-    british_pound_sterling = "british_pound_sterling",
-    australian_dollar = "australian_dollar",
-    chinese_yuan = "chinese_yuan",
+    us_dollar = "$",
+    cad_dollar = "C$",
+    euro = "€",
+    indian_rupees = "₹",
+    british_pound_sterling = "£",
+    australian_dollar = "A$",
+    chinese_yuan = "¥",
   }
   
   export enum CategoryType {

@@ -8,6 +8,7 @@ import CategoryMarkerProvider from "./CategoryMarkerProvider";
 import { SettingsProvider } from "../pages/settings/context/SettingsProvider";
 import Loader from "../ui/Loader";
 import { getUserData } from "../services/userService";
+import { Currency, Font } from "../types/models";
 
 // Interface and main component
 interface DataProviderProps {
@@ -29,8 +30,11 @@ const DataProvider = ({ children }: DataProviderProps) => {
           userId: user.id,
           balance: user.balance,
           settings: {
-            font: user.settings.font,
-            currency: user.settings.currency,
+            font: Font[user.settings.font as unknown as keyof typeof Font],
+            currency:
+              Currency[
+                user.settings.currency as unknown as keyof typeof Currency
+              ],
             pots: user.settings.pots,
             bills: user.settings.bills,
             budgets: user.settings.budgets,

@@ -4,22 +4,26 @@ import { DisplayedModules } from "../../../types/Data";
 
 export interface SettingsContextType {
   selectedFont: Font;
-  setSelectedFont: React.Dispatch<React.SetStateAction<Font>>;
+  handleFontSelect: (font: Font) => Promise<void>;
   selectedCurrency: Currency;
-  setSelectedCurrency: React.Dispatch<React.SetStateAction<Currency>>;
+  handleCurrencySelect: (currency: Currency) => Promise<void>;
   displayedModules: DisplayedModules;
-  setDisplayedModules: React.Dispatch<React.SetStateAction<DisplayedModules>>;
+  handleTogglePots: (value: boolean) => Promise<void>;
+  handleToggleBills: (value: boolean) => Promise<void>;
+  handleToggleBudgets: (value: boolean) => Promise<void>;
 }
 
 export const SettingsContext = createContext<SettingsContextType>({
   selectedFont: Font.public_sans,
-  setSelectedFont: () => {},
+  handleFontSelect: async () => {},
   selectedCurrency: Currency.us_dollar,
-  setSelectedCurrency: () => {},
+  handleCurrencySelect: async () => {},
   displayedModules: {
     pots: true,
     bills: true,
     budgets: true,
   },
-  setDisplayedModules: () => {},
+  handleTogglePots: async () => {},
+  handleToggleBills: async () => {},
+  handleToggleBudgets: async () => {},
 });

@@ -6,9 +6,14 @@ import MainRoutes from "./MainApp/MainRoutes";
 import AuthRoutes from "./auth/AuthRoutes";
 import ProtectedRoute from "./components/ProtectedRoutes";
 import { useAuth } from "./auth/hooks/useAuth";
+import Loader from "./ui/Loader";
 
 const App = () => {
-  const { user } = useAuth();
+  const { user, authLoading } = useAuth();
+
+  if (authLoading) {
+    return <Loader />;
+  }
 
   return (
     <Routes>

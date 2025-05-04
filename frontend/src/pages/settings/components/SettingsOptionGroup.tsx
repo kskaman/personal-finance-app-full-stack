@@ -9,25 +9,26 @@ import {
   useTheme,
 } from "@mui/material";
 import Grid from "@mui/material/Grid2";
-import { SettingsRadioOption } from "../../../types/settingsData";
+import { SettingsRadioOption } from "../../../types/Data";
 import { MD_BREAK } from "../../../data/widthConstants";
 
-interface SettingOptionGroupProp {
+interface SettingOptionGroupProp<T extends string> {
   heading: string;
   options: SettingsRadioOption[];
-  selectedValue: string;
+  selectedValue: T;
   onChange: (event: React.ChangeEvent<HTMLInputElement>) => void;
   parentWidth: number;
 }
 
 // A reusable component for each option group
-const SettingsOptionGroup = ({
+const SettingsOptionGroup = <T extends string>({
   heading,
   options,
   selectedValue,
   onChange,
   parentWidth,
-}: SettingOptionGroupProp) => {
+}: SettingOptionGroupProp<T>) => {
+  console.log(selectedValue);
   const theme = useTheme();
   const isParentWidth = parentWidth < MD_BREAK;
   const gridTemplateColumns = isParentWidth
@@ -44,7 +45,7 @@ const SettingsOptionGroup = ({
       </Typography>
       <FormControl component="fieldset">
         <RadioGroup
-          value={selectedValue}
+          value={selectedValue as string}
           onChange={onChange}
           sx={{
             display: "grid",

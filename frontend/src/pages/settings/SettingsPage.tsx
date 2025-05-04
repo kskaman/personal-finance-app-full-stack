@@ -14,7 +14,7 @@ import UserAccountInfo from "./components/UserAccountInfo";
 import { useNavigate } from "react-router";
 import DeleteAccount from "./components/DeleteAccount";
 
-import { logoutUser } from "../../services/authService";
+import { logoutUser } from "../../services/settingsService";
 import { SettingsContext } from "./context/SettingsContext";
 import { Currency, Font } from "../../types/models";
 import { DisplayedModules, SettingsRadioOption } from "../../types/Data";
@@ -25,11 +25,13 @@ const SettingsPage = () => {
   const { parentWidth, containerRef } = useParentWidth();
   const {
     selectedFont,
-    setSelectedFont,
+    handleFontSelect,
     selectedCurrency,
-    setSelectedCurrency,
+    handleCurrencySelect,
     displayedModules,
-    setDisplayedModules,
+    handleTogglePots,
+    handleToggleBills,
+    handleToggleBudgets,
   } = useContext(SettingsContext);
 
   const navigate = useNavigate();
@@ -38,15 +40,27 @@ const SettingsPage = () => {
 
   // Handler to toggle the "using" property for a given module.
   const handleModuleToggle = (moduleKey: keyof DisplayedModules) => {
-    setDisplayedModules((prev: DisplayedModules) => ({
-      ...prev,
-      [moduleKey]: !prev[moduleKey],
-    }));
+    const current = displayedModules[moduleKey];
+    const updated = !current;
+
+    switch (moduleKey) {
+      case "pots":
+        handleTogglePots(updated);
+        break;
+      case "bills":
+        handleToggleBills(updated);
+        break;
+      case "budgets":
+        handleToggleBudgets(updated);
+        break;
+      default:
+        break;
+    }
   };
 
   const fontOptions: SettingsRadioOption[] = [
     {
-      value: "source-code",
+      value: Font.source_code,
       symbol: (
         <Typography
           fontSize="14px"
@@ -67,7 +81,7 @@ const SettingsPage = () => {
       ),
     },
     {
-      value: "noto-serif",
+      value: Font.noto_serif,
       symbol: (
         <Typography
           fontSize="14px"
@@ -88,7 +102,7 @@ const SettingsPage = () => {
       ),
     },
     {
-      value: "public-sans",
+      value: Font.public_sans,
       symbol: (
         <Typography
           fontSize="14px"
@@ -112,7 +126,7 @@ const SettingsPage = () => {
 
   const currencyOptions: SettingsRadioOption[] = [
     {
-      value: "$",
+      value: Currency.us_dollar,
       symbol: (
         <Typography color={theme.palette.primary.main} fontSize="14px">
           $
@@ -125,7 +139,7 @@ const SettingsPage = () => {
       ),
     },
     {
-      value: "C$",
+      value: Currency.cad_dollar,
       symbol: (
         <Typography fontSize="14px" color={theme.palette.primary.main}>
           C$
@@ -138,7 +152,7 @@ const SettingsPage = () => {
       ),
     },
     {
-      value: "€",
+      value: Currency.euro,
       symbol: (
         <Typography color={theme.palette.primary.main} fontSize="14px">
           €
@@ -151,7 +165,7 @@ const SettingsPage = () => {
       ),
     },
     {
-      value: "₹",
+      value: Currency.indian_rupees,
       symbol: (
         <Typography color={theme.palette.primary.main} fontSize="14px">
           ₹
@@ -164,7 +178,7 @@ const SettingsPage = () => {
       ),
     },
     {
-      value: "£",
+      value: Currency.british_pound_sterling,
       symbol: (
         <Typography color={theme.palette.primary.main} fontSize="14px">
           £
@@ -177,7 +191,7 @@ const SettingsPage = () => {
       ),
     },
     {
-      value: "A$",
+      value: Currency.australian_dollar,
       symbol: (
         <Typography color={theme.palette.primary.main} fontSize="14px">
           A$
@@ -190,7 +204,7 @@ const SettingsPage = () => {
       ),
     },
     {
-      value: "¥",
+      value: Currency.chinese_yuan,
       symbol: (
         <Typography color={theme.palette.primary.main} fontSize="14px">
           ¥
@@ -267,7 +281,7 @@ const SettingsPage = () => {
                 heading="Font Options"
                 options={fontOptions}
                 selectedValue={selectedFont}
-                onChange={(e) => setSelectedFont(e.target.value as Font)}
+                onChange={(e) => handleFontSelect(e.target.value as Font)}
                 parentWidth={parentWidth}
               />
             </SubContainer>
@@ -278,7 +292,7 @@ const SettingsPage = () => {
                 options={currencyOptions}
                 selectedValue={selectedCurrency}
                 onChange={(e) =>
-                  setSelectedCurrency(e.target.value as Currency)
+                  handleCurrencySelect(e.target.value as Currency)
                 }
                 parentWidth={parentWidth}
               />
