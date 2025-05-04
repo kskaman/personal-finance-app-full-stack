@@ -13,7 +13,7 @@ const AuthProvider = ({ children }: AuthProviderProps) => {
 
   useEffect(() => {
     me()
-      .then(({ data }) => setUser(data))
+      .then((user) => setUser(user))
       .finally(() => setAuthLoading(false));
   }, []);
 

@@ -300,3 +300,45 @@ export const getCurrentUser = async (req, res) => {
     return res.status(500).json({ message: "Server error" });
   }
 };
+
+/**
+ * Delete current user record: /api/users/me
+ */
+export const deleteCurrentUser = async (req, res) => {
+  try {
+    const userId = req.userId;
+
+    if (!userId) {
+      return res.status(400).json({ message: "User not found." });
+    }
+
+    // Delete session from Redis
+    const sid = req.cookies.sid;
+
+    // Delete entries in all tables that have reference to the user
+    await prisma.$transaction([
+      prisma.settings.deleteMany({ where: { userId } }),
+      prisma.balance.deleteMany({ where: { userId } }),
+      prisma.transaction.deleteMany({ where: { userId } }),
+      prisma.budget.deleteMany({ where: { userId } }),
+      prisma.pot.deleteMany({ where: { userId } }),
+      prisma.recurringBill.deleteMany({ where: { userId } }),
+      prisma.category.deleteMany({ where: { userId } }),
+      prisma.user.delete({ where: { id: userId } }),
+    ]);
+
+    if (sid) await redis.del(`SESSION:${sid}`);
+
+    // Clear cookie
+    res.clearCookie("sid", {
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+    });
+
+    return res.json({ message: "Account deleted successfully." });
+  } catch (err) {
+    console.error("Delete account error:", err);
+    return res.status(500).json({ message: "Server error." });
+  }
+};

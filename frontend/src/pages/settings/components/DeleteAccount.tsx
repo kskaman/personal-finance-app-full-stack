@@ -4,42 +4,34 @@ import { useContext } from "react";
 import Button from "../../../ui/Button";
 import DeleteIcon from "../../../Icons/DeleteIcon";
 import DeleteModal from "../../../ui/DeleteModal";
-import ActionModal from "../../../ui/ActionModal";
 import useModal from "../../../customHooks/useModal";
 import AuthContext from "../../../auth/context/AuthContext";
-import { logoutUser } from "../../../services/userService";
-
-const DEMO_ACCOUNTS = ["john@example.com", "empty@example.com"];
+import { deleteAccount } from "../../../services/authService";
 
 const DeleteAccount = () => {
   const theme = useTheme();
   const navigate = useNavigate();
-  const { user } = useContext(AuthContext);
-  const isDemo = user && DEMO_ACCOUNTS.includes(user?.email);
+  const { user, setUser } = useContext(AuthContext);
 
-  // Confirmation modal (real users)
+  // Confirmation modal
   const {
     isOpen: isConfirmOpen,
     openModal: openConfirm,
     closeModal: closeConfirm,
   } = useModal();
 
-  // Blocked‑action modal (demo users)
-  const {
-    isOpen: isBlockedOpen,
-    openModal: openBlocked,
-    closeModal: closeBlocked,
-  } = useModal();
-
-  // Click handler
-  const onDeleteClick = () => {
-    return isDemo ? openBlocked() : openConfirm();
-  };
-
   // Delete after confirmation
-  const handleDeleteAccount = () => {
-    logoutUser();
-    navigate("/auth/login", { replace: true });
+  const handleDeleteAccount = async () => {
+    try {
+      await deleteAccount();
+      setUser(null);
+      navigate("/auth/login", { replace: true });
+    } catch (err) {
+      console.error("Error deleting account", err);
+      alert("Failed to delete account.");
+    } finally {
+      closeConfirm();
+    }
   };
 
   return (
@@ -50,7 +42,7 @@ const DeleteAccount = () => {
         padding="16px"
         backgroundColor={theme.palette.others.red}
         color={theme.palette.text.primary}
-        onClick={onDeleteClick}
+        onClick={openConfirm}
         hoverColor={theme.palette.text.primary}
         hoverBgColor={lighten(theme.palette.others.red, 0.2)}
       >
@@ -72,7 +64,7 @@ const DeleteAccount = () => {
         </Stack>
       </Button>
 
-      {/* 1) Confirm‑delete for real users */}
+      {/* Confirm‑delete for real users */}
       {isConfirmOpen && (
         <DeleteModal
           open={isConfirmOpen}
@@ -84,34 +76,6 @@ const DeleteAccount = () => {
             you will be redirected to the sign‑in page.`}
           type="account"
         />
-      )}
-
-      {/* 2) Blocked‑delete for demo users */}
-      {isBlockedOpen && (
-        <ActionModal
-          open={isBlockedOpen}
-          onClose={closeBlocked}
-          heading="Demo account - deletion disabled"
-        >
-          <Typography fontSize="14px" color={theme.palette.primary.light}>
-            This demo account is provided for exploration only and cannot be
-            deleted.
-          </Typography>
-
-          <Button
-            width="100%"
-            height="53px"
-            backgroundColor={theme.palette.primary.main}
-            color={theme.palette.text.primary}
-            onClick={closeBlocked}
-            hoverColor={theme.palette.text.primary}
-            hoverBgColor={theme.palette.primary.light}
-          >
-            <Typography fontSize="14px" fontWeight="bold">
-              OK
-            </Typography>
-          </Button>
-        </ActionModal>
       )}
     </>
   );

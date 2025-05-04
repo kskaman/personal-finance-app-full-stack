@@ -11,6 +11,7 @@ import {
   forgotPassword,
   resetPassword,
   getCurrentUser,
+  deleteCurrentUser,
   resendVerification,
   verifyReset,
 } from "../controllers/authController.js";
@@ -111,6 +112,7 @@ router.post(
 
 // Protected endpoints
 router.get("/users/me", authenticate, getCurrentUser);
+router.delete("/users/me", authenticate, deleteCurrentUser);
 
 // Logout
 router.post("/logout", authenticate, async (req, res) => {

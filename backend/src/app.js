@@ -5,6 +5,12 @@ import morgan from "morgan";
 import cookieParser from "cookie-parser";
 import router from "./routes/index.js";
 
+// import path from "path";
+// import { fileURLToPath } from "url";
+
+// const __filename = fileURLToPath(import.meta.url);
+// const __dirname = path.dirname(__filename);
+
 const app = express();
 
 // Set security-related HTTP headers
@@ -35,8 +41,21 @@ app.use(morgan("dev"));
 
 app.use("/api", router);
 
-app.use("/api", (req, res) => {
-  res.send("Api is running.");
+// Backend Status check
+app.get("/api/status", (req, res) => {
+  res.json({
+    status: "ok",
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || "development",
+  });
 });
+
+// // Serve static files from the frontend build directory
+// app.use(express.static(path.join(__dirname, "../../frontend/dist")));
+
+// // Catch-all route to serve index.html for client-side routing
+// app.get("*", (req, res) => {
+//   res.sendFile(path.join(__dirname, "../../frontend/dist/index.html"));
+// });
 
 export default app;

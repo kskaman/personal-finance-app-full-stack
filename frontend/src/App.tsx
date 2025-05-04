@@ -4,7 +4,6 @@ import DataProvider from "./context/DataProvider";
 
 import MainRoutes from "./MainApp/MainRoutes";
 import AuthRoutes from "./auth/AuthRoutes";
-import NotFoundPage from "./NotFoundPage";
 import ProtectedRoute from "./components/ProtectedRoutes";
 import { useAuth } from "./auth/hooks/useAuth";
 
@@ -23,8 +22,10 @@ const App = () => {
 
       {/* ---- AUTH ---- */}
       {!user && <Route path="/auth/*" element={<AuthRoutes />} />}
+      {/* / → /auth/login */}
+      <Route path="/" element={<Navigate to="/auth/login" replace />} />
 
-      {/* ---- APP (protected) ---- */}
+      {/* Protected Dashboard route */}
       {user && (
         <Route
           path="/app/*"
@@ -38,8 +39,15 @@ const App = () => {
         />
       )}
 
-      {/* optional catch‑all */}
-      <Route path="*" element={<NotFoundPage />} />
+      {/* Catch-all route for authenticated users */}
+      {user && (
+        <Route path="*" element={<Navigate to="/app/overview" replace />} />
+      )}
+
+      {/* Catch-all route for unauthenticated users */}
+      {!user && (
+        <Route path="*" element={<Navigate to="/auth/login" replace />} />
+      )}
     </Routes>
   );
 };
