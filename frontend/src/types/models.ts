@@ -90,7 +90,7 @@ export enum Font {
     type: CategoryType;
   }
   
-  // User (as returned by backend /auth/me or /user/data)
+  // User (as returned by backend /user/data)
   export interface User {
     id: string;
     name?: string;

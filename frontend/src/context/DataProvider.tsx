@@ -9,6 +9,7 @@ import { SettingsProvider } from "../pages/settings/context/SettingsProvider";
 import Loader from "../ui/Loader";
 import { getUserData } from "../services/userService";
 import { Currency, Font } from "../types/models";
+import { getCategories } from "../services/categoryService";
 
 // Interface and main component
 interface DataProviderProps {
@@ -24,10 +25,15 @@ const DataProvider = ({ children }: DataProviderProps) => {
   useEffect(() => {
     const fetchUserData = async () => {
       try {
+        // fetch user
         const user = await getUserData();
         console.log(user);
+        // fetch categories separately
+        const categories = await getCategories();
+
         const constructed: DataType = {
           userId: user.id,
+
           balance: user.balance,
           settings: {
             font: Font[user.settings.font as unknown as keyof typeof Font],
@@ -43,7 +49,7 @@ const DataProvider = ({ children }: DataProviderProps) => {
           budgets: user.budgets ?? [],
           pots: user.pots ?? [],
           recurringBills: user.recurringBills ?? [],
-          categories: user.categories ?? [],
+          categories: categories ?? [],
           markerThemes: [],
         };
 

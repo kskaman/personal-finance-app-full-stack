@@ -12,22 +12,17 @@ import DeleteModal from "../../../ui/DeleteModal.tsx";
 import AddEditCategoryModal from "./AddEditCategory.tsx";
 import { BalanceTransactionsActionContext } from "../../../context/BalanceTransactionsContext.tsx";
 import { Category } from "../../../types/models.ts";
+import {
+  createCategory,
+  deleteCategory,
+  renameCategory,
+} from "../../../services/categoryService.ts";
+import { capitalizeSentence } from "../../../utils/utilityFunctions.ts";
 
 // Interfaces
 interface CategorySettingsProps {
   parentWidth: number;
 }
-
-// Helper function to convert a string to camelCase
-const toCamelCase = (str: string): string => {
-  return str
-    .split(" ")
-    .map((word, index) => {
-      if (index === 0) return word.toLowerCase();
-      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
-    })
-    .join("");
-};
 
 // Main component
 const CategorySettings = ({ parentWidth }: CategorySettingsProps) => {
@@ -57,47 +52,36 @@ const CategorySettings = ({ parentWidth }: CategorySettingsProps) => {
     parentWidth < MD_BREAK ? "1fr" : "repeat(auto-fit, minmax(225px, 1fr))";
 
   // Add Category
-  const handleAddCategory = (categoryName: string) => {
-    setCategories((prev) => [
-      ...prev,
-      {
-        id: toCamelCase(categoryName),
-        type: "custom",
-        name: categoryName,
-        usedInBudgets: false,
-      },
-    ]);
+  const handleAddCategory = async (categoryName: string) => {
+    const cat = await createCategory(capitalizeSentence(categoryName));
+    setCategories((prev) => [...prev, cat]);
   };
 
   // Edit Category
-  const handleEditCategory = (categoryName: string) => {
+  const handleEditCategory = async (categoryName: string) => {
     if (!selectedCategory) return;
-
+    const newName = capitalizeSentence(categoryName);
     const oldName = selectedCategory.name;
-    const id = toCamelCase(categoryName);
+    const updated = await renameCategory(selectedCategory.id, newName);
+
     setCategories((prev) =>
-      prev.map((cat) =>
-        cat.id === selectedCategory?.id
-          ? { ...cat, id, name: categoryName }
-          : cat
-      )
+      prev.map((c) => (c.id === updated.id ? updated : c))
     );
 
     // Update transactions: Replace old category name with new one
     setTransactions((prevTxs) =>
       prevTxs.map((tx) =>
-        tx.category === oldName ? { ...tx, category: categoryName } : tx
+        tx.category === oldName ? { ...tx, category: newName } : tx
       )
     );
   };
 
   // Delete Category
-  const handleDeleteCategory = () => {
+  const handleDeleteCategory = async () => {
     if (!selectedCategory) return;
     const deletedCategoryName = selectedCategory.name;
-    setCategories((prev) =>
-      prev.filter((cat) => cat.id !== selectedCategory.id)
-    );
+    await deleteCategory(selectedCategory.id);
+    setCategories((prev) => prev.filter((c) => c.id !== selectedCategory.id));
 
     // Update transactions so that any transaction that had the deleted category now is "General"
     setTransactions((prevTxs) =>
@@ -153,13 +137,7 @@ const CategorySettings = ({ parentWidth }: CategorySettingsProps) => {
         }}
       >
         {categories.map((category: Category) => (
-          <Grid
-            key={category.id}
-            onClick={() => {
-              // Optionally handle click events here
-            }}
-            sx={{ cursor: "pointer" }}
-          >
+          <Grid key={category.id} sx={{ cursor: "pointer" }}>
             <Stack
               direction="row"
               alignItems="center"

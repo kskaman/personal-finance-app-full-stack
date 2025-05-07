@@ -29,5 +29,11 @@ COPY . .
 # Expose the port
 EXPOSE 3000
 
+# make docker-entrypoint.sh executable
+COPY docker-entrypoint.sh ./
+RUN chmod +x docker-entrypoint.sh
+
+ENTRYPOINT ["./docker-entrypoint.sh"]
+
 # Start the app
 CMD ["node", "./src/index.js"]

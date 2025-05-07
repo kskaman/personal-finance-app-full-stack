@@ -9,6 +9,9 @@
     "test": "vitest --config vitest.config.js",
     "migrate:test": "npx dotenv -e .env.test -- prisma migrate dev --name init --skip-generate"
   },
+  "prisma": {
+    "seed": "node prisma/seed.js"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",

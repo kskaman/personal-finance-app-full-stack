@@ -35,6 +35,7 @@ services:
   app:
     build: .
     container_name: financeApp
+    entrypoint: ["./docker-entrypoint.sh"]
     command: npm run dev
     env_file:
       - .env

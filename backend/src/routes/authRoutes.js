@@ -61,10 +61,6 @@ router.get("/verify-reset", verifyReset);
 
 router.post("/reset-password", validateReset, resetPassword);
 
-// Protected endpoints
-router.get("/users/me", authenticate, getCurrentUser);
-router.delete("/users/me", authenticate, deleteCurrentUser);
-
 // Logout
 router.post("/logout", authenticate, async (req, res) => {
   const sid = req.cookies.sid;

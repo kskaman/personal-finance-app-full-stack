@@ -10,9 +10,11 @@ interface PasswordTextFieldProps {
   onBlur: () => void;
   error?: { message?: string };
   placeholder?: string;
+  label?: string;
 }
 
 const PasswordTextField = ({
+  label,
   value,
   onChange,
   onBlur,
@@ -33,7 +35,7 @@ const PasswordTextField = ({
         fontWeight="bold"
         sx={{ marginBottom: "2px" }}
       >
-        Password
+        {label ? label : "Password"}
       </Typography>
       <TextField
         value={value}

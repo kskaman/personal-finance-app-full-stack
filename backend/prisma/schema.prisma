@@ -1,12 +1,6 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
-  provider = "prisma-client-js"
-  binaryTargets = ["native","linux-musl-openssl-3.0.x","debian-openssl-3.0.x"]
+  provider       = "prisma-client-js"
+  binaryTargets  = ["native","linux-musl-openssl-3.0.x","debian-openssl-3.0.x"]
 }
 
 datasource db {
@@ -14,126 +8,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// USER: Holds authentication and basic profile data.
-model User {
-  id         String         @id @default(uuid())
-  name       String?
-  email      String         @unique
-  password   String
-  createdAt  DateTime       @default(now())
-  updatedAt  DateTime       @updatedAt
-  isVerified Boolean @default(false)
-  verificationToken String?
-  verificationTokenExpiry DateTime?
-  resetToken String?
-  resetTokenExpiry DateTime?
-  // One-to-one relationships
-  settings   Settings?
-  balance    Balance?
-
-  // One-to-many relationships
-  transactions  Transaction[]
-  budgets       Budget[]
-  pots          Pot[]
-  recurringBills RecurringBill[]
-  categories    Category[]
-}
-
-
-// SETTINGS: User-specific configuration.
-model Settings {
-  id                    String   @id @default(uuid())
-  userId                String   @unique
-  font                  Font
-  currency              Currency
-  pots         Boolean
-  bills        Boolean
-  budgets      Boolean
-
-  user                  User     @relation(fields: [userId], references: [id])
-}
-
-
-// BALANCE: Stores a user's current balance data.
-model Balance {
-  id         String   @id @default(uuid())
-  userId     String   @unique
-  current    Float
-  income     Float
-  expenses   Float
-
-  user       User     @relation(fields: [userId], references: [id])
-}
-
-// TRANSACTION: A record for each transaction.
-model Transaction {
-  id          String   @id @default(uuid())
-  userId      String
-  avatar      String?
-  name        String
-  category    String
-  date        DateTime
-  theme       String
-  amount      Float
-  recurring   Boolean
-  recurringId String?
-  
-  user        User     @relation(fields: [userId], references: [id])
-}
-
-// BUDGET: A user’s budget information for a category.
-model Budget {
-  id         String   @id @default(uuid())
-  userId     String
-  category   String
-  maximum    Float
-  theme      String
-
-  user       User     @relation(fields: [userId], references: [id])
-}
-
-// POT: Savings or goal-oriented funds.
-model Pot {
-  id         String   @id @default(uuid())
-  userId     String
-  name       String
-  target     Float
-  total      Float
-  theme      String
-
-  user       User     @relation(fields: [userId], references: [id])
-}
-
-// RECURRING BILL: Bills or regular recurring expenses.
-model RecurringBill {
-  id         String   @id @default(uuid())
-  userId     String
-  avatar     String?
-  name       String
-  category   String
-  amount     Float
-  lastPaid   DateTime
-  dueDate    String
-  theme      String
-  recurring  Boolean  @default(true)
-
-  user       User     @relation(fields: [userId], references: [id])
-}
-
-// CATEGORY: Represents expense/income categories.
-// They can be global or user-specific.
-model Category {
-  id          String       @id @default(uuid())
-  userId      String
-  name        String
-  usedInBudgets Boolean
-  type        CategoryType
-
-  user        User         @relation(fields: [userId], references: [id])
-}
-
-
-// Enums for Settings options.
+/*----------------------  ENUMS  -------------------*/
 enum Font {
   public_sans
   noto_serif
@@ -141,13 +16,13 @@ enum Font {
 }
 
 enum Currency {
-  us_dollar    // Represent "$"
-  cad_dollar  // Represent "C$"
-  euro      // Represent "€"
-  indian_rupees  // Represent "₹"
-  british_pound_sterling // Represent "£"
-  australian_dollar // Represent "A$"
-  chinese_yuan // Represent "¥"
+  us_dollar
+  cad_dollar
+  euro
+  indian_rupees
+  british_pound_sterling
+  australian_dollar
+  chinese_yuan
 }
 
 enum CategoryType {
@@ -155,4 +30,137 @@ enum CategoryType {
   custom
 }
 
+/*----------------------  MODELS  --------------------*/
+model User {
+  id              String          @id @default(uuid())
+  name            String?
+  email           String          @unique
+  password        String
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  isVerified      Boolean         @default(false)
+  verificationToken       String?
+  verificationTokenExpiry DateTime?
+  resetToken               String?
+  resetTokenExpiry         DateTime?
 
+  /* 1‑to‑1 */
+  settings        Settings?
+  balance         Balance?
+
+  /* 1‑to‑many */
+  transactions    Transaction[]
+  budgets         Budget[]
+  pots            Pot[]
+  recurringBills  RecurringBill[]
+  categories      UserCategory[]           // <- link rows for this user
+}
+
+/*------------- Settings (1‑to‑1) -------------*/
+model Settings {
+  id        String  @id @default(uuid())
+  userId    String  @unique
+  font      Font
+  currency  Currency
+  pots      Boolean
+  bills     Boolean
+  budgets   Boolean
+
+  user      User    @relation(fields:[userId], references:[id])
+}
+
+/*------------- Balance (1‑to‑1) -------------*/
+model Balance {
+  id        String  @id @default(uuid())
+  userId    String  @unique
+  current   Float
+  income    Float
+  expenses  Float
+
+  user      User    @relation(fields:[userId], references:[id])
+}
+
+/*------------- Master list of categories -------------*/
+model CategoryDefinition {
+  id         String         @id @default(uuid())
+  name       String         @unique
+  type       CategoryType
+  creatorId  String?                           // null ⟶ standard
+
+  userLinks  UserCategory[]
+}
+
+/*------------- Per‑user link / flags -------------*/
+model UserCategory {
+  id                   String   @id @default(uuid())
+  userId               String
+  categoryDefinitionId String
+  usedInBudgets        Boolean  @default(false)
+
+  user                 User               @relation(fields:[userId], references:[id])
+  categoryDefinition   CategoryDefinition @relation(fields:[categoryDefinitionId], references:[id])
+
+  transactions         Transaction[]
+  budgets              Budget[]
+  recurringBills       RecurringBill[]
+
+  @@unique([userId, categoryDefinitionId])
+}
+
+/*------------- Transaction, Budget, Bill now reference UserCategory via FK -------------*/
+model Transaction {
+  id              String        @id @default(uuid())
+  userId          String
+  user            User          @relation(fields:[userId], references:[id])
+
+  userCategoryId  String?
+  category        UserCategory? @relation(fields:[userCategoryId], references:[id])
+
+  avatar          String?
+  name            String
+  date            DateTime
+  theme           String
+  amount          Float
+  recurring       Boolean
+  recurringId     String?
+}
+
+model Budget {
+  id              String        @id @default(uuid())
+  userId          String
+  user            User          @relation(fields:[userId], references:[id])
+
+  userCategoryId  String
+  category        UserCategory  @relation(fields:[userCategoryId], references:[id])
+
+  maximum         Float
+  theme           String
+}
+
+model Pot {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields:[userId], references:[id])
+
+  name      String
+  target    Float
+  total     Float
+  theme     String
+}
+
+model RecurringBill {
+  id              String        @id @default(uuid())
+  userId          String
+  user            User          @relation(fields:[userId], references:[id])
+
+  userCategoryId  String?
+  category        UserCategory? @relation(fields:[userCategoryId], references:[id])
+
+  avatar          String?
+  name            String
+  amount          Float
+  lastPaid        DateTime
+  dueDate         String
+  theme           String
+  recurring       Boolean       @default(true)
+}

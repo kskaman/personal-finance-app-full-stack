@@ -1,9 +1,8 @@
-import { useContext, useState } from "react";
+import { useState } from "react";
 import {
   Stack,
   Typography,
   IconButton,
-  TextField,
   lighten,
   useTheme,
 } from "@mui/material";
@@ -11,22 +10,30 @@ import EditIcon from "../../../Icons/EditIcon";
 import Button from "../../../ui/Button";
 import SubContainer from "../../../ui/SubContainer";
 import ChangePasswordModal from "./ChangePasswordModal";
-import { User } from "../../../types/User";
-import AuthContext from "../../../auth/context/AuthContext";
+import ModalTextField from "../../../ui/ModalTextField";
+import { updateName } from "../../../services/userService";
+import { useAuth } from "../../../auth/hooks/useAuth";
 
 const UserAccountInfo = () => {
   const theme = useTheme();
-  const { user, setUser } = useContext(AuthContext);
+  const { user, setUser } = useAuth();
   const [isEditingName, setIsEditingName] = useState<boolean>(false);
   const [editedName, setEditedName] = useState<string>(user?.name || "");
   const [isPasswordModalOpen, setIsPasswordModalOpen] =
     useState<boolean>(false);
 
-  const handleNameSave = () => {
+  const handleNameSave = async () => {
     if (!user) return;
-    const updatedUser: User = { ...user, name: editedName };
-    setUser(updatedUser);
-    setIsEditingName(false);
+    try {
+      const newUser = await updateName(editedName.trim());
+      console.log(newUser.name);
+      setUser(newUser);
+
+      setIsEditingName(false);
+    } catch (err) {
+      console.error("Name update failed", err);
+      // optionally show toast
+    }
   };
 
   if (!user) return null;
@@ -48,10 +55,11 @@ const UserAccountInfo = () => {
           </Typography>
           {isEditingName ? (
             <>
-              <TextField
+              <ModalTextField
                 value={editedName}
                 onChange={(e) => setEditedName(e.target.value)}
-                size="small"
+                label={""}
+                adornmentTextFlag={false}
               />
               <Button
                 onClick={handleNameSave}

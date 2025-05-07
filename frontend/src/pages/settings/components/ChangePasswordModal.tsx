@@ -3,11 +3,12 @@ import { Controller, useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import Button from "../../../ui/Button";
-import { useContext, useState } from "react";
-import AuthContext from "../../../auth/context/AuthContext";
-import { User } from "../../../types/User";
+import { useState } from "react";
+
 import ActionModal from "../../../ui/ActionModal";
 import PasswordTextField from "../../../ui/PasswordTextField";
+import { changePassword } from "../../../services/userService";
+import { isAxiosError } from "axios";
 
 interface ChangePasswordModalProps {
   open: boolean;
@@ -44,7 +45,6 @@ const buildSchema = yup.object({
 
 const ChangePasswordModal = ({ open, onClose }: ChangePasswordModalProps) => {
   const theme = useTheme();
-  const { user, setUser } = useContext(AuthContext);
   const [errorMessage, setErrorMessage] = useState<string>("");
 
   const { control, handleSubmit, reset } = useForm<FormValues>({
@@ -52,24 +52,21 @@ const ChangePasswordModal = ({ open, onClose }: ChangePasswordModalProps) => {
     mode: "onSubmit",
   });
 
-  const onSubmit = (data: FormValues) => {
-    if (!user) {
-      setErrorMessage("No user found in AuthContext.");
-      return;
-    }
-    // Validate that the current password matches what we have in UserContext
-    if (user.password !== data.currentPassword) {
-      setErrorMessage("The current password you entered is incorrect.");
-      return;
-    }
+  const onSubmit = async (data: FormValues) => {
+    try {
+      // Call backend to validate & change password
+      await changePassword(data.currentPassword, data.newPassword);
+      // res.message === 'Password updated successfully'
 
-    const updatedUser: User = {
-      ...user,
-      password: data.newPassword,
-    };
-    setUser(updatedUser);
-    reset();
-    onClose();
+      reset();
+      onClose();
+    } catch (err) {
+      if (isAxiosError(err)) {
+        setErrorMessage(err.response?.data?.message);
+      } else {
+        setErrorMessage("Failed to change password");
+      }
+    }
   };
 
   return (
@@ -81,11 +78,12 @@ const ChangePasswordModal = ({ open, onClose }: ChangePasswordModalProps) => {
             control={control}
             render={({ field, fieldState: { error } }) => (
               <PasswordTextField
+                label="Current Password"
                 value={field.value}
                 onChange={field.onChange}
                 onBlur={field.onBlur}
                 error={error}
-                placeholder="Current Password"
+                placeholder=""
               />
             )}
           />
@@ -94,11 +92,12 @@ const ChangePasswordModal = ({ open, onClose }: ChangePasswordModalProps) => {
             control={control}
             render={({ field, fieldState: { error } }) => (
               <PasswordTextField
+                label="New Password"
                 value={field.value}
                 onChange={field.onChange}
                 onBlur={field.onBlur}
                 error={error}
-                placeholder="New Password"
+                placeholder=""
               />
             )}
           />
@@ -107,11 +106,12 @@ const ChangePasswordModal = ({ open, onClose }: ChangePasswordModalProps) => {
             control={control}
             render={({ field, fieldState: { error } }) => (
               <PasswordTextField
+                label="Confirm New Password"
                 value={field.value}
                 onChange={field.onChange}
                 onBlur={field.onBlur}
                 error={error}
-                placeholder="Confirm New Password"
+                placeholder=""
               />
             )}
           />

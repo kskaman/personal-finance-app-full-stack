@@ -23,7 +23,7 @@ export const resendVerification = (email: string) =>
 
 export const me = async () => {
     try {
-        const response = await api.get("/auth/users/me", { withCredentials: true });
+        const response = await api.get("/user/me", { withCredentials: true });
         return response.data;
     } catch (error) {
         // If the error is 401 (Unauthorized), return null instead of throwing

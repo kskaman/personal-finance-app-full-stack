@@ -42,3 +42,60 @@ export const getUserData = async (req, res) => {
     return res.status(500).json({ message: "Internal server error." });
   }
 };
+
+/** PATCH /api/users/me/name */
+export const updateName = async (req, res) => {
+  const { name } = req.body;
+  if (!name) {
+    return res.status(400).json({ message: "Name is required" });
+  }
+  try {
+    const updated = await prisma.user.update({
+      where: { id: req.userId },
+      data: { name },
+      select: { id: true, name: true, email: true, isVerified: true },
+    });
+    res.json(updated);
+  } catch (err) {
+    console.error("updateName error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
+/** PATCH /api/users/me/password */
+export const changePassword = async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  if (!currentPassword || !newPassword) {
+    return res
+      .status(400)
+      .json({ message: "Both current and new passwords are required" });
+  }
+  try {
+    // Fetch the user
+    const user = await prisma.user.findUnique({
+      where: { id: req.userId },
+      select: { password: true },
+    });
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    // Verify current password
+    const valid = await bcrypt.compare(currentPassword, user.password);
+    if (!valid) {
+      return res.status(400).json({ message: "Current password is incorrect" });
+    }
+    // Hash new password & update
+    const hashed = await bcrypt.hash(newPassword, 10);
+    await prisma.user.update({
+      where: { id: req.userId },
+      data: { password: hashed },
+    });
+    res.json({ message: "Password updated successfully" });
+  } catch (err) {
+    console.error("changePassword error:", err);
+    res
+      .status(err.status || 500)
+      .json({ message: err.message || "Server error" });
+  }
+};
