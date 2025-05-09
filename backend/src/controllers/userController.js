@@ -64,12 +64,8 @@ export const updateName = async (req, res) => {
 
 /** PATCH /api/users/me/password */
 export const changePassword = async (req, res) => {
-  const { currentPassword, newPassword } = req.body;
-  if (!currentPassword || !newPassword) {
-    return res
-      .status(400)
-      .json({ message: "Both current and new passwords are required" });
-  }
+  const { newPassword } = req.body;
+
   try {
     // Fetch the user
     const user = await prisma.user.findUnique({
@@ -80,11 +76,6 @@ export const changePassword = async (req, res) => {
       return res.status(404).json({ message: "User not found." });
     }
 
-    // Verify current password
-    const valid = await bcrypt.compare(currentPassword, user.password);
-    if (!valid) {
-      return res.status(400).json({ message: "Current password is incorrect" });
-    }
     // Hash new password & update
     const hashed = await bcrypt.hash(newPassword, 10);
     await prisma.user.update({

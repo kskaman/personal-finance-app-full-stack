@@ -13,6 +13,8 @@ import ChangePasswordModal from "./ChangePasswordModal";
 import ModalTextField from "../../../ui/ModalTextField";
 import { updateName } from "../../../services/userService";
 import { useAuth } from "../../../auth/hooks/useAuth";
+import useModal from "../../../customHooks/useModal";
+import NetworkAlertModal from "../../../ui/NetworkAlertModal";
 
 const UserAccountInfo = () => {
   const theme = useTheme();
@@ -21,6 +23,12 @@ const UserAccountInfo = () => {
   const [editedName, setEditedName] = useState<string>(user?.name || "");
   const [isPasswordModalOpen, setIsPasswordModalOpen] =
     useState<boolean>(false);
+
+  const {
+    isOpen: isNetworkError,
+    openModal: openNetworkErrorModal,
+    closeModal: closeNetworkErrorModal,
+  } = useModal();
 
   const handleNameSave = async () => {
     if (!user) return;
@@ -32,7 +40,7 @@ const UserAccountInfo = () => {
       setIsEditingName(false);
     } catch (err) {
       console.error("Name update failed", err);
-      // optionally show toast
+      openNetworkErrorModal();
     }
   };
 
@@ -119,6 +127,13 @@ const UserAccountInfo = () => {
         <ChangePasswordModal
           open={isPasswordModalOpen}
           onClose={() => setIsPasswordModalOpen(false)}
+        />
+      )}
+
+      {isNetworkError && (
+        <NetworkAlertModal
+          open={isNetworkError}
+          onClose={closeNetworkErrorModal}
         />
       )}
     </SubContainer>

@@ -28,7 +28,6 @@ const SettingsOptionGroup = <T extends string>({
   onChange,
   parentWidth,
 }: SettingOptionGroupProp<T>) => {
-  console.log(selectedValue);
   const theme = useTheme();
   const isParentWidth = parentWidth < MD_BREAK;
   const gridTemplateColumns = isParentWidth

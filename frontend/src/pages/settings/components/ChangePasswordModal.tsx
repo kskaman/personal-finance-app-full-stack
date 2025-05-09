@@ -1,4 +1,4 @@
-import { lighten, Stack, Typography, useTheme } from "@mui/material";
+import { Box, lighten, Stack, Typography, useTheme } from "@mui/material";
 import { Controller, useForm } from "react-hook-form";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
@@ -55,7 +55,7 @@ const ChangePasswordModal = ({ open, onClose }: ChangePasswordModalProps) => {
   const onSubmit = async (data: FormValues) => {
     try {
       // Call backend to validate & change password
-      await changePassword(data.currentPassword, data.newPassword);
+      await changePassword(data.newPassword);
       // res.message === 'Password updated successfully'
 
       reset();
@@ -71,22 +71,15 @@ const ChangePasswordModal = ({ open, onClose }: ChangePasswordModalProps) => {
 
   return (
     <ActionModal open={open} onClose={onClose} heading="Change Password">
+      <Box height={"24px"}>
+        {errorMessage && (
+          <Typography color="error" variant="body2">
+            {errorMessage}
+          </Typography>
+        )}
+      </Box>
       <form onSubmit={handleSubmit(onSubmit)}>
         <Stack gap="20px">
-          <Controller
-            name="currentPassword"
-            control={control}
-            render={({ field, fieldState: { error } }) => (
-              <PasswordTextField
-                label="Current Password"
-                value={field.value}
-                onChange={field.onChange}
-                onBlur={field.onBlur}
-                error={error}
-                placeholder=""
-              />
-            )}
-          />
           <Controller
             name="newPassword"
             control={control}
@@ -115,11 +108,6 @@ const ChangePasswordModal = ({ open, onClose }: ChangePasswordModalProps) => {
               />
             )}
           />
-          {errorMessage && (
-            <Typography color="error" variant="body2">
-              {errorMessage}
-            </Typography>
-          )}
 
           <Button
             type="submit"

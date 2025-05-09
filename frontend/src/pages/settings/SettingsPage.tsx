@@ -286,6 +286,7 @@ const SettingsPage = () => {
               />
             </SubContainer>
 
+            {/* Currency Option */}
             <SubContainer>
               <SettingsOptionGroup
                 heading="Currency Symbol"
