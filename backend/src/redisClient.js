@@ -21,6 +21,7 @@ export default (() => {
         connected = true;
         console.log("Redis connected");
       } catch (e) {
+        console.log("Error encountered : ", e);
         console.warn("Redis connect failed, retrying in 2 s");
         await new Promise((r) => setTimeout(r, 2000));
       }

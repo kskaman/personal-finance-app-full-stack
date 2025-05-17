@@ -2,7 +2,7 @@
 import express from "express";
 import { authenticate } from "../middleware/authMiddleware.js";
 import {
-  listTransactions,
+  getTransactions,
   getTransaction,
   createTransaction,
   updateTransaction,
@@ -12,7 +12,7 @@ import {
 const router = express.Router();
 router.use(authenticate);
 
-router.get("/", listTransactions); // ?page=1&pageSize=10&month=May 2025&catId=···&q=search
+router.get("/", getTransactions); // ?page=1&pageSize=10&month=May 2025&catId=···&q=search
 router.get("/:id", getTransaction);
 router.post("/", createTransaction);
 router.put("/:id", updateTransaction);

@@ -1,9 +1,10 @@
 import { Box, Stack, Typography, useTheme } from "@mui/material";
-import { Pot } from "../../../types/Data";
+
 import SubContainer from "../../../ui/SubContainer";
 import Button from "../../../ui/Button";
 import PotsProgressBar from "./PotsProgressBar";
 import OptionsButton from "../../../ui/OptionsButton";
+import { Pot } from "../../../types/models";
 
 interface Props {
   pot: Pot;

@@ -1,8 +1,8 @@
 import { Box, Stack, Typography } from "@mui/material";
-import SubContainer from "../ui/SubContainer";
-import illustrationImage from "../assets/images/illustration-authentication.svg";
-import logoIcon from "../assets/images/logo-large.svg";
-import { beige100, grey900, white } from "../theme/colors";
+import SubContainer from "../../ui/SubContainer";
+import illustrationImage from "../../assets/images/illustration-authentication.svg";
+import logoIcon from "../../assets/images/logo-large.svg";
+import { beige100, grey900, white } from "../../theme/colors";
 import { Outlet } from "react-router";
 
 const AuthPage = () => {

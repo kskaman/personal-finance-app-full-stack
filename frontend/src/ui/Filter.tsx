@@ -18,11 +18,15 @@ import SearchInput from "./SearchInput";
 interface FilterProps {
   parentWidth: number;
   searchName: string;
-  setSearchName: React.Dispatch<React.SetStateAction<string>>;
+  setSearchName:
+    | React.Dispatch<React.SetStateAction<string>>
+    | ((value: string) => void);
   category?: string;
   setCategory?: React.Dispatch<React.SetStateAction<string>>;
   sortBy: string;
-  setSortBy: React.Dispatch<React.SetStateAction<string>>;
+  setSortBy:
+    | React.Dispatch<React.SetStateAction<string>>
+    | ((value: string) => void);
   selectedMonth?: string;
   setSelectedMonth?: React.Dispatch<React.SetStateAction<string>>;
   monthOptions?: string[];

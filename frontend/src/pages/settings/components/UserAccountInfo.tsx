@@ -12,7 +12,7 @@ import SubContainer from "../../../ui/SubContainer";
 import ChangePasswordModal from "./ChangePasswordModal";
 import ModalTextField from "../../../ui/ModalTextField";
 import { updateName } from "../../../services/userService";
-import { useAuth } from "../../../auth/hooks/useAuth";
+import { useAuth } from "../../auth/hooks/useAuth";
 import useModal from "../../../customHooks/useModal";
 import NetworkAlertModal from "../../../ui/NetworkAlertModal";
 

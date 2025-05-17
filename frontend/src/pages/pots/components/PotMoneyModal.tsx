@@ -5,10 +5,10 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import PotsModalProgressBar from "./PotsModalProgressBar";
 import { useContext, useEffect, useState } from "react";
-import { Currencies } from "../../../types/settingsData";
 import ActionModal from "../../../ui/ActionModal";
 import ModalTextField from "../../../ui/ModalTextField";
 import { SettingsContext } from "../../settings/context/SettingsContext";
+import { Currency } from "../../../types/models";
 
 // Types & Interface
 interface PotMoneyModalProps {
@@ -37,7 +37,7 @@ const buildSchema = (
   maxLimit: number,
   potTarget: number,
   isConfirmed: boolean,
-  currencySymbol: Currencies
+  currencySymbol: Currency
 ) =>
   yup.object({
     amount: yup

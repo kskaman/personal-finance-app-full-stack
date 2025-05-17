@@ -2,20 +2,20 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import { Box, lighten, Stack, Typography } from "@mui/material";
 import { Controller, useForm } from "react-hook-form";
 import * as yup from "yup";
-import ModalTextField from "../../ui/ModalTextField";
-import Button from "../../ui/Button";
+import ModalTextField from "../../../ui/ModalTextField";
+import Button from "../../../ui/Button";
 
-import PasswordTextField from "../../ui/PasswordTextField";
+import PasswordTextField from "../../../ui/PasswordTextField";
 import { Link, useNavigate } from "react-router";
-import { warning, grey500, grey900, white } from "../../theme/colors";
-import SetTitle from "../../ui/SetTitle";
+import { warning, grey500, grey900, white } from "../../../theme/colors";
+import SetTitle from "../../../ui/SetTitle";
 import { useState } from "react";
 
 import {
   login as loginApi,
   me,
   resendVerification,
-} from "../../services/authService";
+} from "../../../services/authService";
 import { useAuth } from "../hooks/useAuth";
 import { isAxiosError } from "axios";
 

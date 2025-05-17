@@ -1,39 +1,30 @@
-import { yupResolver } from "@hookform/resolvers/yup";
 import { Box, lighten, Stack, Typography } from "@mui/material";
 import { Controller, useForm } from "react-hook-form";
-import * as yup from "yup";
-import Button from "../../ui/Button";
+import ModalTextField from "../../../ui/ModalTextField";
+import Button from "../../../ui/Button";
 import { useState } from "react";
-import { warning, green, grey500, grey900, white } from "../../theme/colors";
-import ModalTextField from "../../ui/ModalTextField";
-import PasswordTextField from "../../ui/PasswordTextField";
-import SetTitle from "../../ui/SetTitle";
+import * as yup from "yup";
+import { yupResolver } from "@hookform/resolvers/yup";
+import { grey500, grey900, white } from "../../../theme/colors";
+import SetTitle from "../../../ui/SetTitle";
 import { Link } from "react-router";
-
-import { signup as signupApi } from "../../services/authService";
 import { isAxiosError } from "axios";
+
+import { forgotPassword as forgotApi } from "../../../services/authService";
 
 interface FormValues {
   email: string;
-  password: string;
 }
-
-const passwordRegex =
-  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[#@_])[A-Za-z\d#@_]{8,20}$/;
 
 const buildSchema = () =>
   yup.object({
     email: yup
       .string()
       .required("Email is required")
-      .email("Enter a valid email"),
-    password: yup
-      .string()
-      .required("Password is required")
-      .matches(passwordRegex, "Password does not meet criteria"),
+      .email("Enter a valid Email"),
   });
 
-const SignupForm = () => {
+const ForgotPasswordForm = () => {
   const {
     control,
     handleSubmit,
@@ -45,43 +36,44 @@ const SignupForm = () => {
     reValidateMode: "onChange",
     defaultValues: {
       email: "",
-      password: "",
     },
   });
+
+  const [message, setMessage] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const onSubmit = async (data: FormValues) => {
+    setMessage(null);
     setErrorMessage(null);
-    setSuccessMessage(null);
     try {
-      const res = await signupApi(data);
-      setSuccessMessage(res.data.message);
+      const res = await forgotApi(data.email);
+      setMessage(res.data.message);
       reset();
     } catch (err) {
       if (isAxiosError(err)) {
-        setErrorMessage(err.response?.data?.message ?? "Signup failed");
+        setErrorMessage(err.response?.data?.message ?? "Request failed");
       } else {
-        setErrorMessage("An unexpected error occurred.");
+        setErrorMessage("An unexpected error occurred");
       }
     }
   };
 
   return (
     <>
-      <SetTitle title={"Sign Up"} />
+      <SetTitle title={"Forgot Password"} />
+
       <Typography fontSize="32px" fontWeight="bold">
-        Sign Up
+        Forgot Password
       </Typography>
 
-      <Box height={"32px"} width={"100%"} maxWidth="396px" mx="auto">
-        {successMessage && (
-          <Typography fontSize="14px" align="center" color={green}>
-            {successMessage}
+      <Box height={"32px"} width={"100%"} mx="auto">
+        {message && (
+          <Typography fontSize="14px" align="center" color="green">
+            {message}
           </Typography>
         )}
         {errorMessage && (
-          <Typography fontSize="14px" align="center" color={warning}>
+          <Typography fontSize="14px" align="center" color="warning">
             {errorMessage}
           </Typography>
         )}
@@ -89,7 +81,6 @@ const SignupForm = () => {
 
       <form onSubmit={handleSubmit(onSubmit)}>
         <Stack gap="20px">
-          {/* Email Field */}
           <Controller
             name="email"
             control={control}
@@ -97,36 +88,16 @@ const SignupForm = () => {
               <ModalTextField
                 value={field.value}
                 onChange={field.onChange}
-                error={error}
+                onBlur={field.onBlur}
                 label="Email"
                 placeholder=""
+                error={error}
                 adornmentTextFlag={false}
                 color={grey900}
                 adornmentColor={grey500}
               />
             )}
           />
-          {/* Password Field */}
-          <Controller
-            name="password"
-            control={control}
-            render={({ field, fieldState: { error } }) => (
-              <PasswordTextField
-                value={field.value}
-                onChange={field.onChange}
-                onBlur={field.onBlur}
-                error={error}
-              />
-            )}
-          />
-          {/* Password instructions */}
-          <Typography fontSize="14px" color={grey500}>
-            Your password must be 8 to 20 characters long and include at least
-            one uppercase letter, one lowercase letter, one digit, and at least
-            one of the following special characters: #, @, or _
-          </Typography>
-
-          {/* Signup Button */}
           <Button
             type="submit"
             width="100%"
@@ -138,7 +109,7 @@ const SignupForm = () => {
             hoverBgColor={lighten(grey900, 0.2)}
           >
             <Typography fontSize="14px" fontWeight="bold">
-              {isSubmitting ? "..." : "Create Account"}
+              {isSubmitting ? "Sending..." : "Send Reset Link"}
             </Typography>
           </Button>
         </Stack>
@@ -147,7 +118,7 @@ const SignupForm = () => {
       {/* Login */}
       <Stack gap={1} margin="auto" direction="row">
         <Typography fontSize="14px" color={grey500}>
-          Already have an account?
+          Go to
         </Typography>
         <Link to="/auth/login">
           <Typography
@@ -163,4 +134,4 @@ const SignupForm = () => {
   );
 };
 
-export default SignupForm;
+export default ForgotPasswordForm;

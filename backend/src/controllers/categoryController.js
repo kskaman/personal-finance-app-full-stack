@@ -174,22 +174,35 @@ export const deleteCategory = async (req, res) => {
     if (!generalLink) {
       return res.status(500).json({ message: "General category not found" });
     }
-    await prisma.$transaction([
-      prisma.transaction.updateMany({
-        where: { userId: req.userId, userCategoryId: link.id },
-        data: { userCategoryId: generalLink.id },
-      }),
-      prisma.budget.deleteMany({ where: { userCategoryId: link.id } }),
-      prisma.recurringBill.updateMany({
-        where: { userId: req.userId, userCategoryId: link.id },
-        data: { userCategoryId: generalLink.id },
-      }),
-      prisma.userCategory.delete({ where: { id: link.id } }),
-      prisma.categoryDefinition.delete({
-        where: { id: link.categoryDefinitionId },
-      }),
-    ]);
-    res.status(204).send();
+
+    // Update transactions
+    await prisma.transaction.updateMany({
+      where: { userId: req.userId, userCategoryId: link.id },
+      data: { userCategoryId: generalLink.id },
+    });
+
+    // Delete budgets
+    await prisma.budget.deleteMany({
+      where: { userCategoryId: link.id },
+    });
+
+    // Update recurring bills
+    await prisma.recurringBill.updateMany({
+      where: { userId: req.userId, userCategoryId: link.id },
+      data: { userCategoryId: generalLink.id },
+    });
+
+    // Delete the user category
+    await prisma.userCategory.delete({
+      where: { id: link.id },
+    });
+
+    // Delete the linked category definition
+    await prisma.categoryDefinition.delete({
+      where: { id: link.categoryDefinitionId },
+    });
+
+    return res.status(204).json({ message: "Category unlinked successfully." });
   } catch (err) {
     console.error(err);
     res

@@ -1,15 +1,15 @@
 import { useNavigate, useSearchParams } from "react-router";
 import { Box, Stack, Typography } from "@mui/material";
 import { useState } from "react";
-import { api } from "../../api/api";
+import { api } from "../../../api/api";
 import { useForm, Controller } from "react-hook-form";
 import * as yup from "yup";
 import { yupResolver } from "@hookform/resolvers/yup";
-import Button from "../../ui/Button";
-import { grey500, grey900, warning, white } from "../../theme/colors";
+import Button from "../../../ui/Button";
+import { grey500, grey900, warning, white } from "../../../theme/colors";
 import { lighten } from "@mui/material";
 import { AxiosError } from "axios";
-import PasswordTextField from "../../ui/PasswordTextField";
+import PasswordTextField from "../../../ui/PasswordTextField";
 
 const passwordRegex =
   /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[#@_])[A-Za-z\d#@_]{8,20}$/;

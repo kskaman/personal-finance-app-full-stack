@@ -24,7 +24,6 @@ interface AddEditBillModalProps {
   onSubmit: (data: BillFormValues) => void;
   // if billData is provided, we're in edit mode
   billData?: {
-    id: string;
     name: string;
     category: string;
     amount: number;

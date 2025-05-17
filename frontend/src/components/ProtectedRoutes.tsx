@@ -1,5 +1,5 @@
 import { Navigate, useLocation } from "react-router";
-import { useAuth } from "../auth/hooks/useAuth";
+import { useAuth } from "../pages/auth/hooks/useAuth";
 import { ReactNode } from "react";
 import Loader from "../ui/Loader";
 

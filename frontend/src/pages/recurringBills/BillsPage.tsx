@@ -12,67 +12,49 @@ import DeleteModal from "../../ui/DeleteModal";
 import useModal from "../../customHooks/useModal";
 import AddEditBillModal, {
   BillFormValues,
-} from "../pots/components/AddEditBillModal";
+} from "./components/AddEditBillModal.tsx";
 import Button from "../../ui/Button";
-import { v4 as uuidv4 } from "uuid";
 import { getRandomColor } from "../../utils/utilityFunctions";
 import { BalanceTransactionsActionContext } from "../../context/BalanceTransactionsContext";
 import EmptyStatePage from "../../ui/EmptyStatePage";
 import Filter from "../../ui/Filter";
 import { RecurringBill, Transaction } from "../../types/models";
 import {
-  RecurringActionContext,
-  RecurringDataContext,
-} from "./context/RecurringContext";
+  useBills,
+  useCreateBill,
+  useDeleteBill,
+  useUpdateBill,
+  useBillStats,
+} from "./hooks/useBills.ts";
+import { useSearchParams } from "react-router";
+import DotLoader from "../../ui/DotLoader";
 
-// Function to filter & sort bills.
-const filterAndSortBills = (
-  bills: RecurringBill[],
-  searchName: string,
-  sortBy: string
-): RecurringBill[] => {
-  const filteredBills = bills.filter((bill) =>
-    searchName
-      ? bill.name.toLowerCase().includes(searchName.toLowerCase().trim())
-      : true
-  );
-
-  return filteredBills.sort((a, b) => {
-    switch (sortBy) {
-      case "Latest":
-        return Number(a.dueDate) - Number(b.dueDate);
-      case "Oldest":
-        return Number(b.dueDate) - Number(a.dueDate);
-      case "A to Z":
-        return a.name.localeCompare(b.name);
-      case "Z to A":
-        return b.name.localeCompare(a.name);
-      case "Highest":
-        return a.amount - b.amount;
-      case "Lowest":
-        return b.amount - a.amount;
-      default:
-        return 0;
-    }
-  });
+const buildParams = (params: URLSearchParams, key: string, value: string) => {
+  const copy = new URLSearchParams(params.toString());
+  copy.set(key, value);
+  return copy;
 };
 
 const BillsPage = () => {
   const theme = useTheme();
   const { containerRef, parentWidth } = useParentWidth();
 
-  const { recurringBills } = useContext(RecurringDataContext);
-  const { setRecurringBills } = useContext(RecurringActionContext);
+  // URL params for search and sort
+  const [params, setParams] = useSearchParams();
+  const searchName = params.get("search") ?? "";
+  const sortBy = params.get("sort") ?? "Latest";
+
+  // React Query data
+  const { data: bills = [], isLoading, isError, refetch } = useBills(params);
+  const { data: stats } = useBillStats();
+
+  // mutations
+  const addBillMutation = useCreateBill();
+  const editBillMutation = useUpdateBill();
+  const delBillMutation = useDeleteBill();
+
   // If bill changes should propagate to transactions:
   const { setTransactions } = useContext(BalanceTransactionsActionContext);
-
-  const [searchName, setSearchName] = useState<string>("");
-  const [sortBy, setSortBy] = useState<string>("Latest");
-
-  const totalBill = Math.abs(
-    recurringBills.reduce((sum, bill) => sum + bill.amount, 0)
-  );
-  const filteredBills = filterAndSortBills(recurringBills, searchName, sortBy);
 
   // Modal management hooks.
   const {
@@ -97,46 +79,39 @@ const BillsPage = () => {
   const [selectedBill, setSelectedBill] = useState<RecurringBill | null>(null);
 
   // Delete handler.
-  const handleBillDelete = (billId: string) => {
+  const handleBillDelete = (billId: string | undefined) => {
     if (!billId) return;
-    const newBills = recurringBills.filter(
-      (bill: RecurringBill) => bill.id !== billId
-    );
-    setRecurringBills(newBills);
-    setSelectedBill(null);
+    delBillMutation.mutate(billId);
   };
 
   // Function to add a new recurring bill.
   const handleAddBill = (formData: BillFormValues) => {
-    const newBill: RecurringBill = {
-      id: uuidv4(),
+    addBillMutation.mutate({
       name: formData.name,
       category: formData.category,
-      amount: -parseFloat(formData.amount), // store as negative
+      amount: -parseFloat(formData.amount),
       dueDate: formData.dueDate,
-      recurring: true,
-      lastPaid: "", // No payments yet.
       theme: getRandomColor(),
-    };
-    setRecurringBills((prevBills: RecurringBill[]) => [...prevBills, newBill]);
+    });
   };
 
   // Function to edit an existing recurring bill.
   // Name and category changes will propagate across all related transactions,
   // while changes to Amount and Due Date affect only future transactions.
-  const handleEditBill = (formData: BillFormValues, billId: string) => {
-    const updatedBills: RecurringBill[] = recurringBills.map((bill) =>
-      bill.id === billId
-        ? {
-            ...bill,
-            name: formData.name,
-            category: formData.category,
-            amount: -parseFloat(formData.amount),
-            dueDate: formData.dueDate,
-          }
-        : bill
-    );
-    setRecurringBills(updatedBills);
+  const handleEditBill = (
+    formData: BillFormValues,
+    billId: string | undefined
+  ) => {
+    if (!billId) return;
+    editBillMutation.mutate({
+      id: billId,
+      data: {
+        name: formData.name,
+        category: formData.category,
+        dueDate: formData.dueDate,
+        amount: -parseFloat(formData.amount),
+      },
+    });
 
     // Update all transactions linked to this recurring bill (for name and category changes).
     setTransactions((prevTxns: Transaction[]) =>
@@ -148,7 +123,25 @@ const BillsPage = () => {
     );
   };
 
-  if (filteredBills.length === 0) {
+  const updateParam = (key: string, value: string) => {
+    setParams(buildParams(params, key, value), { replace: true });
+  };
+
+  if (isLoading) {
+    return <DotLoader />;
+  }
+
+  if (isError)
+    return (
+      <EmptyStatePage
+        message="Unable to fetch bills"
+        subText="Check your connection and retry."
+        buttonLabel="Retry"
+        onButtonClick={() => refetch()}
+      />
+    );
+
+  if (bills.length === 0) {
     return (
       <>
         <EmptyStatePage
@@ -225,7 +218,7 @@ const BillsPage = () => {
                     : "column"
                 }
               >
-                <Total parentWidth={parentWidth} totalBill={totalBill} />
+                <Total parentWidth={parentWidth} totalBill={stats.total} />
                 <Summary />
               </Stack>
               <SubContainer flex={2}>
@@ -233,19 +226,22 @@ const BillsPage = () => {
                   <Filter
                     parentWidth={parentWidth}
                     searchName={searchName}
-                    setSearchName={setSearchName}
+                    setSearchName={(name: string) =>
+                      updateParam("search", name)
+                    }
                     sortBy={sortBy}
-                    setSortBy={setSortBy}
+                    setSortBy={(val: string) => updateParam("sort", val)}
                   />
                   <BillsTable
                     parentWidth={parentWidth}
-                    bills={filteredBills}
+                    bills={bills}
                     setDeleteModalOpen={(bill: RecurringBill) => {
                       setSelectedBill(bill);
                       openDeleteModal();
                     }}
                     setEditModalOpen={(bill: RecurringBill) => {
                       setSelectedBill(bill);
+                      console.log(selectedBill);
                       openEditModal();
                     }}
                   />
@@ -282,7 +278,6 @@ const BillsPage = () => {
               closeEditModal();
             }}
             billData={{
-              id: selectedBill.id,
               name: selectedBill.name,
               category: selectedBill.category,
               amount: Math.abs(selectedBill.amount),

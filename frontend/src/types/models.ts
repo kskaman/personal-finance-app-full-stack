@@ -70,16 +70,13 @@ export enum Font {
   }
   
   export interface RecurringBill {
-    id: string;
-    userId: string;
-    avatar?: string;
+    id?: string;
     name: string;
     category: string;
     amount: number;
-    lastPaid: Date;
+    lastPaid?: Date;
     dueDate: string;
     theme: string;
-    recurring: boolean;
   }
   
   export interface Category {

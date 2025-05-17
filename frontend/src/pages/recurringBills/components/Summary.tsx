@@ -2,21 +2,22 @@ import { Divider, List, ListItem, Typography, useTheme } from "@mui/material";
 import SubContainer from "../../../ui/SubContainer";
 import { formatNumber } from "../../../utils/utilityFunctions";
 import { useContext } from "react";
-import { RecurringDataContext } from "../context/RecurringContext";
 import { SettingsContext } from "../../settings/context/SettingsContext";
+import { useBillStats } from "../hooks/useBills";
+import { summaryData } from "../../../constants/billsSummaryLabels";
 
 const Summary = () => {
   const theme = useTheme();
-  const summaryData = {
-    paid: { label: "Paid Bills" },
-    unpaid: {
-      label: "Total Upcoming",
-    },
-    dueSoon: { label: "Due Soon" },
-    due: { label: "Due" },
+
+  const { data: stats } = useBillStats();
+
+  const recurringSummary = {
+    due: stats.due,
+    unpaid: stats.unpaid,
+    dueSoon: stats.dueSoon,
+    paid: stats.paid,
   };
 
-  const recurringSummary = useContext(RecurringDataContext).recurringSummary;
   const showDue = recurringSummary.due.count !== 0;
 
   const currencySymbol = useContext(SettingsContext).selectedCurrency;

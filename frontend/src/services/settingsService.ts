@@ -2,20 +2,20 @@ import { api } from "../api/api";
 
 
 export const updateFont = (font: string) =>
-  api.put("/settings/font", { font });
+  api.put("/settings", { font });
 
 export const updateCurrency = (currency: string) =>
-  api.put("/settings/currency", { currency });
+  api.put("/settings", { currency });
 
 
 export const updateDisplayedPots = (pots: boolean) =>
-  api.put("/settings/displayedPots", { pots });
+  api.put("/settings", { pots });
 
 export const updateDisplayedBills = (bills: boolean) =>
-  api.put("/settings/displayedBills", { bills });
+  api.put("/settings", { bills });
 
 export const updateDisplayedBudgets = (budgets: boolean) =>
-  api.put("/settings/displayedBudgets", { budgets });
+  api.put("/settings", { budgets });
 
 
 export const logoutUser = async (): Promise<void> => {

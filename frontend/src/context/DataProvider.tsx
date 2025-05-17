@@ -30,6 +30,7 @@ const DataProvider = ({ children }: DataProviderProps) => {
         console.log(user);
         // fetch categories separately
         const categories = await getCategories();
+        console.log(categories);
 
         const constructed: DataType = {
           userId: user.id,

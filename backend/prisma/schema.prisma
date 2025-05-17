@@ -156,11 +156,9 @@ model RecurringBill {
   userCategoryId  String?
   category        UserCategory? @relation(fields:[userCategoryId], references:[id])
 
-  avatar          String?
   name            String
   amount          Float
-  lastPaid        DateTime
+  lastPaid        DateTime?
   dueDate         String
   theme           String
-  recurring       Boolean       @default(true)
 }

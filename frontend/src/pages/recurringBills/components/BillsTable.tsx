@@ -23,12 +23,12 @@ import OptionsButton from "../../../ui/OptionsButton";
 import { SettingsContext } from "../../settings/context/SettingsContext";
 import { RecurringBill } from "../../../types/models";
 
-const getBillStatus = (lastPaid: string, dueDate: string) => {
+const getBillStatus = (lastPaid: Date | undefined, dueDate: string) => {
   let status = "unpaid";
 
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const lastPaidDate = lastPaid ? new Date(lastPaid) : null;
+  const lastPaidDate = lastPaid ? lastPaid : null;
   const dueDateObj =
     dueDate && !isNaN(Number(dueDate))
       ? new Date(now.getFullYear(), now.getMonth(), Number(dueDate))

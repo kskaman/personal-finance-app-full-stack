@@ -18,7 +18,7 @@ import { logoutUser } from "../../services/settingsService";
 import { SettingsContext } from "./context/SettingsContext";
 import { Currency, Font } from "../../types/models";
 import { DisplayedModules, SettingsRadioOption } from "../../types/Data";
-import { useAuth } from "../../auth/hooks/useAuth";
+import { useAuth } from "../auth/hooks/useAuth";
 
 const SettingsPage = () => {
   const theme = useTheme();

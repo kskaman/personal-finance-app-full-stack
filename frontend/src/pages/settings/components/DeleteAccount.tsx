@@ -5,7 +5,7 @@ import Button from "../../../ui/Button";
 import DeleteIcon from "../../../Icons/DeleteIcon";
 import DeleteModal from "../../../ui/DeleteModal";
 import useModal from "../../../customHooks/useModal";
-import AuthContext from "../../../auth/context/AuthContext";
+import AuthContext from "../../auth/context/AuthContext";
 import { deleteAccount } from "../../../services/settingsService";
 
 const DeleteAccount = () => {
