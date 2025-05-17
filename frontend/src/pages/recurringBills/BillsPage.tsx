@@ -1,18 +1,22 @@
 import { Box, Stack, Typography, useTheme } from "@mui/material";
 import SetTitle from "../../ui/SetTitle";
 import PageDiv from "../../ui/PageDiv";
-import { useContext, useState } from "react";
+import {
+  lazy,
+  Suspense,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+} from "react";
 import Total from "./components/Total";
 import Summary from "./components/Summary";
 import BillsTable from "./components/BillsTable";
 import SubContainer from "../../ui/SubContainer";
 import useParentWidth from "../../customHooks/useParentWidth";
-import { SM_BREAK, XL_BREAK } from "../../data/widthConstants";
-import DeleteModal from "../../ui/DeleteModal";
+import { SM_BREAK, XL_BREAK } from "../../constants/widthConstants.ts";
 import useModal from "../../customHooks/useModal";
-import AddEditBillModal, {
-  BillFormValues,
-} from "./components/AddEditBillModal.tsx";
+
 import Button from "../../ui/Button";
 import { getRandomColor } from "../../utils/utilityFunctions";
 import { BalanceTransactionsActionContext } from "../../context/BalanceTransactionsContext";
@@ -26,26 +30,18 @@ import {
   useUpdateBill,
   useBillStats,
 } from "./hooks/useBills.ts";
-import { useSearchParams } from "react-router";
 import DotLoader from "../../ui/DotLoader";
 
-const buildParams = (params: URLSearchParams, key: string, value: string) => {
-  const copy = new URLSearchParams(params.toString());
-  copy.set(key, value);
-  return copy;
-};
+import { BillFormValues } from "./components/AddEditBillModal.tsx";
+const DeleteModal = lazy(() => import("../../ui/DeleteModal"));
+const AddEditBillModal = lazy(() => import("./components/AddEditBillModal"));
 
 const BillsPage = () => {
   const theme = useTheme();
   const { containerRef, parentWidth } = useParentWidth();
 
-  // URL params for search and sort
-  const [params, setParams] = useSearchParams();
-  const searchName = params.get("search") ?? "";
-  const sortBy = params.get("sort") ?? "Latest";
-
   // React Query data
-  const { data: bills = [], isLoading, isError, refetch } = useBills(params);
+  const { data: bills = [], isLoading, isError, refetch } = useBills();
   const { data: stats } = useBillStats();
 
   // mutations
@@ -77,55 +73,83 @@ const BillsPage = () => {
 
   // Local state for the selected bill (for edit or delete)
   const [selectedBill, setSelectedBill] = useState<RecurringBill | null>(null);
+  const [searchText, setSearchText] = useState<string>("");
+  const [sortBy, setSortBy] = useState<string>("Latest");
 
   // Delete handler.
-  const handleBillDelete = (billId: string | undefined) => {
-    if (!billId) return;
-    delBillMutation.mutate(billId);
-  };
-
-  // Function to add a new recurring bill.
-  const handleAddBill = (formData: BillFormValues) => {
-    addBillMutation.mutate({
-      name: formData.name,
-      category: formData.category,
-      amount: -parseFloat(formData.amount),
-      dueDate: formData.dueDate,
-      theme: getRandomColor(),
-    });
-  };
-
-  // Function to edit an existing recurring bill.
-  // Name and category changes will propagate across all related transactions,
-  // while changes to Amount and Due Date affect only future transactions.
-  const handleEditBill = (
-    formData: BillFormValues,
-    billId: string | undefined
-  ) => {
-    if (!billId) return;
-    editBillMutation.mutate({
-      id: billId,
-      data: {
+  const handleAddBill = useCallback(
+    (formData: BillFormValues) => {
+      addBillMutation.mutate({
         name: formData.name,
         category: formData.category,
-        dueDate: formData.dueDate,
         amount: -parseFloat(formData.amount),
-      },
-    });
+        dueDate: formData.dueDate,
+        theme: getRandomColor(),
+      });
+    },
+    [addBillMutation]
+  );
 
-    // Update all transactions linked to this recurring bill (for name and category changes).
-    setTransactions((prevTxns: Transaction[]) =>
-      prevTxns.map((txn) =>
-        txn.recurring && txn.recurringId === billId
-          ? { ...txn, name: formData.name, category: formData.category }
-          : txn
-      )
+  // Edit bill handler
+  const handleEditBill = useCallback(
+    (formData: BillFormValues, billId?: string) => {
+      if (!billId) return;
+      editBillMutation.mutate({
+        id: billId,
+        data: {
+          name: formData.name,
+          category: formData.category,
+          dueDate: formData.dueDate,
+          amount: -parseFloat(formData.amount),
+        },
+      });
+
+      setTransactions((prevTxns: Transaction[]) =>
+        prevTxns.map((txn) =>
+          txn.recurring && txn.recurringId === billId
+            ? { ...txn, name: formData.name, category: formData.category }
+            : txn
+        )
+      );
+    },
+    [editBillMutation, setTransactions]
+  );
+
+  // Delete bill handler
+  const handleBillDelete = useCallback(
+    (billId?: string) => {
+      if (!billId) return;
+      delBillMutation.mutate(billId);
+    },
+    [delBillMutation]
+  );
+
+  const filteredBills = useMemo(() => {
+    const result = bills.filter((bill: RecurringBill) =>
+      searchText
+        ? bill.name.toLowerCase().includes(searchText.toLowerCase().trim())
+        : true
     );
-  };
 
-  const updateParam = (key: string, value: string) => {
-    setParams(buildParams(params, key, value), { replace: true });
-  };
+    return result.sort((a: RecurringBill, b: RecurringBill) => {
+      switch (sortBy) {
+        case "Latest":
+          return Number(a.dueDate) - Number(b.dueDate);
+        case "Oldest":
+          return Number(b.dueDate) - Number(a.dueDate);
+        case "A to Z":
+          return a.name.localeCompare(b.name);
+        case "Z to A":
+          return b.name.localeCompare(a.name);
+        case "Highest":
+          return a.amount - b.amount;
+        case "Lowest":
+          return b.amount - a.amount;
+        default:
+          return 0;
+      }
+    });
+  }, [bills, searchText, sortBy]);
 
   if (isLoading) {
     return <DotLoader />;
@@ -141,28 +165,30 @@ const BillsPage = () => {
       />
     );
 
-  if (bills.length === 0) {
+  if (stats.total === 0) {
     return (
       <>
-        <EmptyStatePage
-          message="No Bills Yet"
-          subText="Track your recurring expenses by adding your first bill."
-          buttonLabel="Create a Bill"
-          onButtonClick={() => {
-            openAddModal();
-          }}
-        />
-        {/* Add Bill Modal (AddEditBillModal in add mode) */}
-        {isAddModalOpen && (
-          <AddEditBillModal
-            open={isAddModalOpen}
-            onClose={closeAddModal}
-            onSubmit={(formData: BillFormValues) => {
-              handleAddBill(formData);
-              closeAddModal();
+        <Box ref={containerRef}>
+          <EmptyStatePage
+            message="No Bills Yet"
+            subText="Track your recurring expenses by adding your first bill."
+            buttonLabel={parentWidth < 450 ? "+" : "+ Create a Bill"}
+            onButtonClick={() => {
+              openAddModal();
             }}
           />
-        )}
+          {/* Add Bill Modal (AddEditBillModal in add mode) */}
+          {isAddModalOpen && (
+            <AddEditBillModal
+              open={isAddModalOpen}
+              onClose={closeAddModal}
+              onSubmit={(formData: BillFormValues) => {
+                handleAddBill(formData);
+                closeAddModal();
+              }}
+            />
+          )}
+        </Box>
       </>
     );
   }
@@ -225,16 +251,14 @@ const BillsPage = () => {
                 <Stack gap="24px">
                   <Filter
                     parentWidth={parentWidth}
-                    searchName={searchName}
-                    setSearchName={(name: string) =>
-                      updateParam("search", name)
-                    }
+                    searchName={searchText}
+                    setSearchName={setSearchText}
                     sortBy={sortBy}
-                    setSortBy={(val: string) => updateParam("sort", val)}
+                    setSortBy={setSortBy}
                   />
                   <BillsTable
                     parentWidth={parentWidth}
-                    bills={bills}
+                    bills={filteredBills}
                     setDeleteModalOpen={(bill: RecurringBill) => {
                       setSelectedBill(bill);
                       openDeleteModal();
@@ -251,52 +275,58 @@ const BillsPage = () => {
           </Stack>
         </PageDiv>
 
-        {/* Delete Modal */}
-        {selectedBill && isDeleteModalOpen && (
-          <DeleteModal
-            open={isDeleteModalOpen}
-            onClose={() => {
-              setSelectedBill(null);
-              closeDeleteModal();
-            }}
-            handleDelete={() => handleBillDelete(selectedBill.id)}
-            label={"Recurring Bill"}
-            type="bill"
-          />
-        )}
+        <Suspense fallback={<DotLoader />}>
+          {/* Delete Modal */}
+          {selectedBill && isDeleteModalOpen && (
+            <DeleteModal
+              open={isDeleteModalOpen}
+              onClose={() => {
+                setSelectedBill(null);
+                closeDeleteModal();
+              }}
+              handleDelete={() => handleBillDelete(selectedBill.id)}
+              label={"Recurring Bill"}
+              type="bill"
+            />
+          )}
+        </Suspense>
 
-        {/* Edit Bill Modal (AddEditBillModal in edit mode) */}
-        {selectedBill && isEditModalOpen && (
-          <AddEditBillModal
-            open={isEditModalOpen}
-            onClose={() => {
-              setSelectedBill(null);
-              closeEditModal();
-            }}
-            onSubmit={(formData: BillFormValues) => {
-              handleEditBill(formData, selectedBill.id);
-              closeEditModal();
-            }}
-            billData={{
-              name: selectedBill.name,
-              category: selectedBill.category,
-              amount: Math.abs(selectedBill.amount),
-              dueDate: selectedBill.dueDate,
-            }}
-          />
-        )}
+        <Suspense fallback={<DotLoader />}>
+          {/* Edit Bill Modal (AddEditBillModal in edit mode) */}
+          {selectedBill && isEditModalOpen && (
+            <AddEditBillModal
+              open={isEditModalOpen}
+              onClose={() => {
+                setSelectedBill(null);
+                closeEditModal();
+              }}
+              onSubmit={(formData: BillFormValues) => {
+                handleEditBill(formData, selectedBill.id);
+                closeEditModal();
+              }}
+              billData={{
+                name: selectedBill.name,
+                category: selectedBill.category,
+                amount: Math.abs(selectedBill.amount),
+                dueDate: selectedBill.dueDate,
+              }}
+            />
+          )}
+        </Suspense>
 
-        {/* Add Bill Modal (AddEditBillModal in add mode) */}
-        {isAddModalOpen && (
-          <AddEditBillModal
-            open={isAddModalOpen}
-            onClose={closeAddModal}
-            onSubmit={(formData: BillFormValues) => {
-              handleAddBill(formData);
-              closeAddModal();
-            }}
-          />
-        )}
+        <Suspense fallback={<DotLoader />}>
+          {/* Add Bill Modal (AddEditBillModal in add mode) */}
+          {isAddModalOpen && (
+            <AddEditBillModal
+              open={isAddModalOpen}
+              onClose={closeAddModal}
+              onSubmit={(formData: BillFormValues) => {
+                handleAddBill(formData);
+                closeAddModal();
+              }}
+            />
+          )}
+        </Suspense>
       </Box>
     </>
   );

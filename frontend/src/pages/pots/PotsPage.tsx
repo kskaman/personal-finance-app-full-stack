@@ -6,7 +6,7 @@ import { useContext, useEffect, useMemo, useState } from "react";
 import PotItem from "./components/PotItem";
 import Button from "../../ui/Button";
 import useParentWidth from "../../customHooks/useParentWidth";
-import { MD_BREAK } from "../../data/widthConstants";
+import { MD_BREAK } from "../../constants/widthConstants";
 import useModal from "../../customHooks/useModal";
 import { MarkerTheme } from "../../types/Data";
 import DeleteModal from "../../ui/DeleteModal";

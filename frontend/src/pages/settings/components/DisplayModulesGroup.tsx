@@ -8,7 +8,7 @@ import {
   useTheme,
 } from "@mui/material";
 import Grid from "@mui/material/Grid2";
-import { MD_BREAK } from "../../../data/widthConstants";
+import { MD_BREAK } from "../../../constants/widthConstants";
 import useModal from "../../../customHooks/useModal";
 import { useState } from "react";
 import DisplayModuleToggleModal from "./DisplayModuleToggleModal";

@@ -8,7 +8,7 @@ import BudgetsOverview from "./components/BudgetsOverview";
 import BillsOverview from "./components/BillsOverview";
 import PageDiv from "../../ui/PageDiv";
 import useParentWidth from "../../customHooks/useParentWidth";
-import { LG_BREAK, SM_BREAK } from "../../data/widthConstants";
+import { LG_BREAK, SM_BREAK } from "../../constants/widthConstants";
 import { useContext } from "react";
 import { BalanceTransactionsDataContext } from "../../context/BalanceTransactionsContext";
 import { useNavigate } from "react-router";

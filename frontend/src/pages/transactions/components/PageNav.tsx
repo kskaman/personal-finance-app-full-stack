@@ -2,7 +2,7 @@ import { Stack, Typography, useTheme } from "@mui/material";
 import CaretLeftIcon from "../../../Icons/CaretLeftIcon";
 import Button from "../../../ui/Button";
 import CaretRightIcon from "../../../Icons/CaretRightIcon";
-import { SM_BREAK } from "../../../data/widthConstants";
+import { SM_BREAK } from "../../../constants/widthConstants";
 
 interface Props {
   numbers: number[];

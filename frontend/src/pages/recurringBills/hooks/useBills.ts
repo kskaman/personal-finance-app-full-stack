@@ -2,7 +2,6 @@ import {
     useQuery,
     useMutation,
     useQueryClient,
-    QueryKey,
 } from "@tanstack/react-query";
   
 import {
@@ -13,18 +12,16 @@ import {
     deleteBill
 } from "../../../services/billsService";
 
-const listKey = (params: string): QueryKey => ["bills", params];
-  const statsKey: QueryKey = ["bills", "stats"];
-  
+
 /* ---------- LIST / STATS ---------- */
-export const useBills = (params: URLSearchParams) =>
+export const useBills = () =>
     useQuery({
-        queryKey: listKey(params.toString()),
-        queryFn: () => fetchBills(params),
+        queryKey: ["bills"],
+        queryFn: () => fetchBills(),
 });
   
 export const useBillStats = () =>
-    useQuery({ queryKey: statsKey, queryFn: fetchBillStats });
+    useQuery({ queryKey: ["bills", "stats"], queryFn: fetchBillStats });
   
 /* ---------- MUTATIONS (invalidate list + stats) ---------- */
 const useInvalidate = () => {

@@ -1,8 +1,8 @@
 import { api } from "../api/api";
 import { RecurringBill } from "../types/models";
 
-export const fetchBills = (params: URLSearchParams) =>
-  api.get("/bills", { params }).then((res) => res.data);
+export const fetchBills = () =>
+  api.get("/bills").then((res) => res.data);
 
 export const fetchBillStats = () =>
   api.get("/bills/stats").then((res) => res.data);

@@ -6,7 +6,7 @@ import CaretRightIcon from "../../../Icons/CaretRightIcon";
 import { formatNumber } from "../../../utils/utilityFunctions";
 import SubContainer from "../../../ui/SubContainer";
 import useParentWidth from "../../../customHooks/useParentWidth";
-import { SM_BREAK } from "../../../data/widthConstants";
+import { SM_BREAK } from "../../../constants/widthConstants";
 import { Link } from "react-router";
 import { PotsDataContext } from "../../pots/context/PotsContext";
 import { SettingsContext } from "../../settings/context/SettingsContext";

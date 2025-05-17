@@ -10,7 +10,7 @@ import {
 } from "@mui/material";
 import Grid from "@mui/material/Grid2";
 import { SettingsRadioOption } from "../../../types/Data";
-import { MD_BREAK } from "../../../data/widthConstants";
+import { MD_BREAK } from "../../../constants/widthConstants";
 
 interface SettingOptionGroupProp<T extends string> {
   heading: string;

@@ -8,6 +8,8 @@ import TransactionsPage from "../pages/transactions/TransactionsPage";
 import SettingsPage from "../pages/settings/SettingsPage";
 import { useContext } from "react";
 import { SettingsContext } from "../pages/settings/context/SettingsContext";
+import { billsLoader } from "../pages/recurringBills/billsLoader";
+import queryClient from "../queryClient";
 
 const MainRoutes = () => {
   const { displayedModules } = useContext(SettingsContext);
@@ -25,7 +27,11 @@ const MainRoutes = () => {
         {displayedModules.pots && <Route path="pots" element={<PotsPage />} />}
         {/* Only allow access to BillsPage if the module is enabled */}
         {displayedModules.bills && (
-          <Route path="bills" element={<BillsPage />} />
+          <Route
+            path="bills"
+            element={<BillsPage />}
+            loader={billsLoader(queryClient)}
+          />
         )}
         <Route path="transactions" element={<TransactionsPage />} />
         <Route path="settings" element={<SettingsPage />} />

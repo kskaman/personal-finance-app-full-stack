@@ -19,7 +19,7 @@ import { MarkerTheme } from "../../types/Data";
 import Button from "../../ui/Button";
 import BudgetsItem from "./components/BudgetsItem";
 import useParentWidth from "../../customHooks/useParentWidth";
-import { LG_BREAK, MD_SM_BREAK } from "../../data/widthConstants";
+import { LG_BREAK, MD_SM_BREAK } from "../../constants/widthConstants";
 import DeleteModal from "../../ui/DeleteModal";
 import AddEditBudgetModal from "./components/AddEditBudgetModal";
 import useModal from "../../customHooks/useModal";

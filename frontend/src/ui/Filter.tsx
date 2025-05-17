@@ -11,7 +11,7 @@ import {
 import Grid from "@mui/material/Grid2";
 import SearchIcon from "../Icons/SearchIcon";
 import FilterIcon from "../Icons/FilterIcon";
-import { XL_BREAK, MD_BREAK, MD_SM_BREAK } from "../data/widthConstants";
+import { XL_BREAK, MD_BREAK } from "../constants/widthConstants";
 import CustomDropdown from "./CustomDropdown";
 import SearchInput from "./SearchInput";
 
@@ -144,7 +144,7 @@ const Filter = ({
           </Grid>
         </Grid>
       );
-    } else if (parentWidth >= MD_SM_BREAK && parentWidth <= XL_BREAK) {
+    } else if (parentWidth >= MD_BREAK && parentWidth <= XL_BREAK) {
       return (
         <Grid container spacing={2}>
           <Grid size={6}>

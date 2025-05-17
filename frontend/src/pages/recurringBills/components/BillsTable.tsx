@@ -17,8 +17,8 @@ import {
 } from "../../../utils/utilityFunctions";
 import PaidIcon from "../../../Icons/PaidIcon";
 import DueIcon from "../../../Icons/DueIcon";
-import { MD_SM_BREAK } from "../../../data/widthConstants";
-import { useContext } from "react";
+import { MD_SM_BREAK } from "../../../constants/widthConstants";
+import { memo, useContext } from "react";
 import OptionsButton from "../../../ui/OptionsButton";
 import { SettingsContext } from "../../settings/context/SettingsContext";
 import { RecurringBill } from "../../../types/models";
@@ -343,4 +343,4 @@ const BillsTable = ({
   );
 };
 
-export default BillsTable;
+export default memo(BillsTable);

@@ -7,7 +7,8 @@
   "scripts": {
     "dev": "nodemon ./src/index.js",
     "test": "vitest --config vitest.config.js",
-    "migrate:test": "npx dotenv -e .env.test -- prisma migrate dev --name init --skip-generate"
+    "migrate:test": "npx dotenv -e .env.test -- prisma migrate dev --name init --skip-generate",
+    "db:seed": "prisma db seed"
   },
   "prisma": {
     "seed": "node prisma/seed.js"

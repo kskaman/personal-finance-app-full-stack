@@ -1,7 +1,7 @@
 import { useContext, useState } from "react";
 import { Box, lighten, Stack, Typography, useTheme } from "@mui/material";
 import Grid from "@mui/material/Grid2";
-import { MD_BREAK } from "../../../data/widthConstants.ts";
+import { MD_BREAK } from "../../../constants/widthConstants.ts";
 import SubContainer from "../../../ui/SubContainer.tsx";
 import EditIcon from "../../../Icons/EditIcon.tsx";
 import DeleteIcon from "../../../Icons/DeleteIcon.tsx";

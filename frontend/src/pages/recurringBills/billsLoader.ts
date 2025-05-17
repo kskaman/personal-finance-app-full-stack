@@ -1,13 +1,18 @@
 import { QueryClient } from "@tanstack/react-query";
-import { fetchBills } from "../../services/billsService";
+import { fetchBills, fetchBillStats } from "../../services/billsService";
 
 export const billsLoader =
   (qc: QueryClient) =>
-  async ({ request }: { request: Request }) => {
-    const params = new URL(request.url).searchParams;
-    await qc.ensureQueryData({
-      queryKey: ["bills", params.toString()],
-      queryFn: () => fetchBills(params),
-    });
+  async () => {
+    await Promise.all([
+      qc.ensureQueryData({
+        queryKey: ["bills"],
+        queryFn: fetchBills,
+      }),
+      qc.ensureQueryData({
+        queryKey: ["bills", "stats"],
+        queryFn: fetchBillStats,
+      }),
+    ]);
     return null;
 };

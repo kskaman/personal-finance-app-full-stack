@@ -2,7 +2,7 @@ import { Box, Stack, Typography, useTheme } from "@mui/material";
 import SubContainer from "../../../ui/SubContainer";
 import BillsIcon from "../../../Icons/BillsIcon";
 import { formatNumber } from "../../../utils/utilityFunctions";
-import { SM_BREAK } from "../../../data/widthConstants";
+import { SM_BREAK } from "../../../constants/widthConstants";
 import { useContext } from "react";
 import { SettingsContext } from "../../settings/context/SettingsContext";
 

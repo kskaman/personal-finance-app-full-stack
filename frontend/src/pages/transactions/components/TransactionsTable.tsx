@@ -15,7 +15,7 @@ import {
   formatNumber,
   getInitials,
 } from "../../../utils/utilityFunctions";
-import { MD_SM_BREAK } from "../../../data/widthConstants";
+import { MD_SM_BREAK } from "../../../constants/widthConstants";
 import { useContext } from "react";
 import OptionsButton from "../../../ui/OptionsButton";
 import { Transaction } from "../../../types/models";
