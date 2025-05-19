@@ -1,6 +1,6 @@
 generator client {
-  provider       = "prisma-client-js"
-  binaryTargets  = ["native","linux-musl-openssl-3.0.x","debian-openssl-3.0.x"]
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x", "debian-openssl-3.0.x"]
 }
 
 datasource db {
@@ -8,7 +8,9 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-/*----------------------  ENUMS  -------------------*/
+/**
+ * ----------------------  ENUMS  -------------------
+ */
 enum Font {
   public_sans
   noto_serif
@@ -30,135 +32,155 @@ enum CategoryType {
   custom
 }
 
-/*----------------------  MODELS  --------------------*/
+/**
+ * ----------------------  MODELS  --------------------
+ */
 model User {
-  id              String          @id @default(uuid())
-  name            String?
-  email           String          @unique
-  password        String
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  isVerified      Boolean         @default(false)
+  id                      String    @id @default(uuid())
+  name                    String?
+  email                   String    @unique
+  password                String
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+  isVerified              Boolean   @default(false)
   verificationToken       String?
   verificationTokenExpiry DateTime?
-  resetToken               String?
-  resetTokenExpiry         DateTime?
+  resetToken              String?
+  resetTokenExpiry        DateTime?
 
-  /* 1‑to‑1 */
-  settings        Settings?
-  balance         Balance?
+  /**
+   * 1‑to‑1
+   */
+  settings     Settings?
+  balance      Balance?
 
-  /* 1‑to‑many */
-  transactions    Transaction[]
-  budgets         Budget[]
-  pots            Pot[]
-  recurringBills  RecurringBill[]
-  categories      UserCategory[]           // <- link rows for this user
+  /**
+   * 1‑to‑many
+   */
+  transactions   Transaction[]
+  budgets        Budget[]
+  pots           Pot[]
+  recurringBills RecurringBill[]
+  categories     UserCategory[] // <- link rows for this user
 }
 
-/*------------- Settings (1‑to‑1) -------------*/
+/**
+ * ------------- Settings (1‑to‑1) -------------
+ */
 model Settings {
-  id        String  @id @default(uuid())
-  userId    String  @unique
-  font      Font
-  currency  Currency
-  pots      Boolean
-  bills     Boolean
-  budgets   Boolean
+  id       String   @id @default(uuid())
+  userId   String   @unique
+  font     Font
+  currency Currency
+  pots     Boolean
+  bills    Boolean
+  budgets  Boolean
 
-  user      User    @relation(fields:[userId], references:[id])
+  user User @relation(fields: [userId], references: [id])
 }
 
-/*------------- Balance (1‑to‑1) -------------*/
+/**
+ * ------------- Balance (1‑to‑1) -------------
+ */
 model Balance {
-  id        String  @id @default(uuid())
-  userId    String  @unique
-  current   Float
-  income    Float
-  expenses  Float
+  id       String @id @default(uuid())
+  userId   String @unique
+  current  Float
+  income   Float
+  expenses Float
 
-  user      User    @relation(fields:[userId], references:[id])
+  user User @relation(fields: [userId], references: [id])
 }
 
-/*------------- Master list of categories -------------*/
+
+
+/**
+ * ------------- Master list of categories -------------
+ */
 model CategoryDefinition {
-  id         String         @id @default(uuid())
-  name       String         @unique
-  type       CategoryType
-  creatorId  String?                           // null ⟶ standard
+  id        String       @id @default(uuid())
+  name      String       @unique
+  type      CategoryType
+  creatorId String? // null ⟶ standard
 
-  userLinks  UserCategory[]
+  userLinks UserCategory[]
 }
 
-/*------------- Per‑user link / flags -------------*/
+/**
+ * ------------- Per‑user link / flags -------------
+ */
 model UserCategory {
-  id                   String   @id @default(uuid())
+  id                   String  @id @default(uuid())
   userId               String
   categoryDefinitionId String
-  usedInBudgets        Boolean  @default(false)
+  usedInBudgets        Boolean @default(false)
 
-  user                 User               @relation(fields:[userId], references:[id])
-  categoryDefinition   CategoryDefinition @relation(fields:[categoryDefinitionId], references:[id])
+  user               User               @relation(fields: [userId], references: [id])
+  categoryDefinition CategoryDefinition @relation(fields: [categoryDefinitionId], references: [id])
 
-  transactions         Transaction[]
-  budgets              Budget[]
-  recurringBills       RecurringBill[]
+  transactions   Transaction[]
+  budgets        Budget[]
+  recurringBills RecurringBill[]
 
   @@unique([userId, categoryDefinitionId])
 }
 
-/*------------- Transaction, Budget, Bill now reference UserCategory via FK -------------*/
+/**
+ * ------------- Transaction, Budget, Bill now reference UserCategory via FK -------------
+ */
 model Transaction {
-  id              String        @id @default(uuid())
-  userId          String
-  user            User          @relation(fields:[userId], references:[id])
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
 
-  userCategoryId  String?
-  category        UserCategory? @relation(fields:[userCategoryId], references:[id])
+  userCategoryId String?
+  category       UserCategory? @relation(fields: [userCategoryId], references: [id])
 
-  avatar          String?
-  name            String
-  date            DateTime
-  theme           String
-  amount          Float
-  recurring       Boolean
-  recurringId     String?
+  avatar      String?
+  name        String
+  date        DateTime
+  theme       String
+  amount      Float
+  recurring   Boolean
+  recurringId String?
 }
 
 model Budget {
-  id              String        @id @default(uuid())
-  userId          String
-  user            User          @relation(fields:[userId], references:[id])
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
 
-  userCategoryId  String
-  category        UserCategory  @relation(fields:[userCategoryId], references:[id])
+  userCategoryId String
+  category       UserCategory @relation(fields: [userCategoryId], references: [id])
 
-  maximum         Float
-  theme           String
+  maximum Float
+  theme   String
 }
 
 model Pot {
-  id        String   @id @default(uuid())
-  userId    String
-  user      User     @relation(fields:[userId], references:[id])
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
 
-  name      String
-  target    Float
-  total     Float
-  theme     String
+  name   String
+  target Float
+  total  Float
+  theme  String
+
+  @@unique([userId, name])
 }
 
 model RecurringBill {
-  id              String        @id @default(uuid())
-  userId          String
-  user            User          @relation(fields:[userId], references:[id])
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
 
-  userCategoryId  String?
-  category        UserCategory? @relation(fields:[userCategoryId], references:[id])
+  userCategoryId String?
+  category       UserCategory? @relation(fields: [userCategoryId], references: [id])
 
-  name            String
-  amount          Float
-  lastPaid        DateTime?
-  dueDate         String
-  theme           String
+  name     String
+  amount   Float
+  lastPaid DateTime?
+  dueDate  String
+  theme    String
 }

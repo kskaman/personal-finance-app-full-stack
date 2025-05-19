@@ -1,14 +1,7 @@
 import { Box, Stack, Typography, useTheme } from "@mui/material";
 import SetTitle from "../../ui/SetTitle";
 import PageDiv from "../../ui/PageDiv";
-import {
-  lazy,
-  Suspense,
-  useCallback,
-  useContext,
-  useMemo,
-  useState,
-} from "react";
+import { useCallback, useContext, useMemo, useState } from "react";
 import Total from "./components/Total";
 import Summary from "./components/Summary";
 import BillsTable from "./components/BillsTable";
@@ -32,17 +25,27 @@ import {
 } from "./hooks/useBills.ts";
 import DotLoader from "../../ui/DotLoader";
 
-import { BillFormValues } from "./components/AddEditBillModal.tsx";
-const DeleteModal = lazy(() => import("../../ui/DeleteModal"));
-const AddEditBillModal = lazy(() => import("./components/AddEditBillModal"));
+import DeleteModal from "../../ui/DeleteModal.tsx";
+import AddEditBillModal, {
+  BillFormValues,
+} from "./components/AddEditBillModal";
 
 const BillsPage = () => {
   const theme = useTheme();
   const { containerRef, parentWidth } = useParentWidth();
 
   // React Query data
-  const { data: bills = [], isLoading, isError, refetch } = useBills();
-  const { data: stats } = useBillStats();
+  const {
+    data: bills = [],
+    isLoading: billsLoading,
+    isError: billsError,
+    refetch,
+  } = useBills();
+  const {
+    data: stats,
+    isLoading: statsLoading,
+    isError: statsError,
+  } = useBillStats();
 
   // mutations
   const addBillMutation = useCreateBill();
@@ -151,11 +154,11 @@ const BillsPage = () => {
     });
   }, [bills, searchText, sortBy]);
 
-  if (isLoading) {
+  if (billsLoading || statsLoading) {
     return <DotLoader />;
   }
 
-  if (isError)
+  if (billsError || statsError)
     return (
       <EmptyStatePage
         message="Unable to fetch bills"
@@ -275,58 +278,52 @@ const BillsPage = () => {
           </Stack>
         </PageDiv>
 
-        <Suspense fallback={<DotLoader />}>
-          {/* Delete Modal */}
-          {selectedBill && isDeleteModalOpen && (
-            <DeleteModal
-              open={isDeleteModalOpen}
-              onClose={() => {
-                setSelectedBill(null);
-                closeDeleteModal();
-              }}
-              handleDelete={() => handleBillDelete(selectedBill.id)}
-              label={"Recurring Bill"}
-              type="bill"
-            />
-          )}
-        </Suspense>
+        {/* Delete Modal */}
+        {selectedBill && isDeleteModalOpen && (
+          <DeleteModal
+            open={isDeleteModalOpen}
+            onClose={() => {
+              setSelectedBill(null);
+              closeDeleteModal();
+            }}
+            handleDelete={() => handleBillDelete(selectedBill.id)}
+            label={"Recurring Bill"}
+            type="bill"
+          />
+        )}
 
-        <Suspense fallback={<DotLoader />}>
-          {/* Edit Bill Modal (AddEditBillModal in edit mode) */}
-          {selectedBill && isEditModalOpen && (
-            <AddEditBillModal
-              open={isEditModalOpen}
-              onClose={() => {
-                setSelectedBill(null);
-                closeEditModal();
-              }}
-              onSubmit={(formData: BillFormValues) => {
-                handleEditBill(formData, selectedBill.id);
-                closeEditModal();
-              }}
-              billData={{
-                name: selectedBill.name,
-                category: selectedBill.category,
-                amount: Math.abs(selectedBill.amount),
-                dueDate: selectedBill.dueDate,
-              }}
-            />
-          )}
-        </Suspense>
+        {/* Edit Bill Modal (AddEditBillModal in edit mode) */}
+        {selectedBill && isEditModalOpen && (
+          <AddEditBillModal
+            open={isEditModalOpen}
+            onClose={() => {
+              setSelectedBill(null);
+              closeEditModal();
+            }}
+            onSubmit={(formData: BillFormValues) => {
+              handleEditBill(formData, selectedBill.id);
+              closeEditModal();
+            }}
+            billData={{
+              name: selectedBill.name,
+              category: selectedBill.category,
+              amount: Math.abs(selectedBill.amount),
+              dueDate: selectedBill.dueDate,
+            }}
+          />
+        )}
 
-        <Suspense fallback={<DotLoader />}>
-          {/* Add Bill Modal (AddEditBillModal in add mode) */}
-          {isAddModalOpen && (
-            <AddEditBillModal
-              open={isAddModalOpen}
-              onClose={closeAddModal}
-              onSubmit={(formData: BillFormValues) => {
-                handleAddBill(formData);
-                closeAddModal();
-              }}
-            />
-          )}
-        </Suspense>
+        {/* Add Bill Modal (AddEditBillModal in add mode) */}
+        {isAddModalOpen && (
+          <AddEditBillModal
+            open={isAddModalOpen}
+            onClose={closeAddModal}
+            onSubmit={(formData: BillFormValues) => {
+              handleAddBill(formData);
+              closeAddModal();
+            }}
+          />
+        )}
       </Box>
     </>
   );

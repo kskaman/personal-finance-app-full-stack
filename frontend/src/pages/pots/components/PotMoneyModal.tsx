@@ -14,16 +14,12 @@ import { Currency } from "../../../types/models";
 interface PotMoneyModalProps {
   open: boolean;
   onClose: () => void;
-  type: "addMoney" | "withdraw" | null;
+  type: "add" | "withdraw" | null;
   potName: string;
   potTotal: number;
   potTarget: number;
   maxLimit: number;
-  updatePotAmount: (
-    newTotal: number,
-    newTarget: number,
-    newBalance: number
-  ) => void;
+  updatePotAmount: (amount: number) => void;
 }
 
 interface FormValues {
@@ -32,7 +28,7 @@ interface FormValues {
 
 // Yup Schema for Validation
 const buildSchema = (
-  type: "addMoney" | "withdraw" | null,
+  type: "add" | "withdraw" | null,
   potTotal: number,
   maxLimit: number,
   potTarget: number,
@@ -45,7 +41,7 @@ const buildSchema = (
       .matches(/^\d+(\.\d{0,2})?$/, "Enter a valid number (up to 2 decimals).")
       .test(
         "max-limit",
-        type === "addMoney"
+        type === "add"
           ? `Amount cannot exceed available funds (${currencySymbol}${maxLimit.toFixed(
               2
             )})`
@@ -54,7 +50,7 @@ const buildSchema = (
             )})`,
         (value) => {
           const num = parseFloat(value || "0");
-          if (type === "addMoney") {
+          if (type === "add") {
             return num <= maxLimit;
           } else if (type === "withdraw") {
             return num <= potTotal;
@@ -68,7 +64,7 @@ const buildSchema = (
         (value) => {
           const num = parseFloat(value || "0");
           if (isConfirmed) return true;
-          if (type === "addMoney") {
+          if (type === "add") {
             return num <= potTarget - potTotal;
           }
           return true;
@@ -115,14 +111,13 @@ const PotMoneyModal = ({
   const watchedAmount = parseFloat(watch("amount")) || 0;
   const requiredToReachTarget = potTarget - potTotal;
   const extra =
-    type === "addMoney" && watchedAmount > requiredToReachTarget
+    type === "add" && watchedAmount > requiredToReachTarget
       ? watchedAmount - requiredToReachTarget
       : 0;
-  const computedNewTarget = potTarget + extra;
 
   // Update confirmation flag when amount changes.
   useEffect(() => {
-    if (type === "addMoney" && watchedAmount > requiredToReachTarget) {
+    if (type === "add" && watchedAmount > requiredToReachTarget) {
       setShowConfirm(true);
     } else {
       setShowConfirm(false);
@@ -131,11 +126,7 @@ const PotMoneyModal = ({
 
   const onSubmit = (data: FormValues) => {
     const amount = parseFloat(data.amount);
-    if (type === "addMoney") {
-      updatePotAmount(potTotal + amount, computedNewTarget, maxLimit - amount);
-    } else if (type === "withdraw") {
-      updatePotAmount(potTotal - amount, computedNewTarget, maxLimit + amount);
-    }
+    updatePotAmount(amount);
     onClose();
   };
 
@@ -156,7 +147,7 @@ const PotMoneyModal = ({
   };
 
   useEffect(() => {
-    if (type === "addMoney") {
+    if (type === "add") {
       const requiredToReachTarget = potTarget - potTotal;
       if (watchedAmount > requiredToReachTarget) {
         if (watchedAmount > maxLimit) {
@@ -178,9 +169,7 @@ const PotMoneyModal = ({
       open={open}
       onClose={onClose}
       heading={
-        type === "addMoney"
-          ? `Add to '${potName}'`
-          : `Withdraw from '${potName}'`
+        type === "add" ? `Add to '${potName}'` : `Withdraw from '${potName}'`
       }
     >
       <form onSubmit={handleSubmit(onSubmit)}>
@@ -197,7 +186,7 @@ const PotMoneyModal = ({
               valueChange={watchedAmount}
               target={potTarget + extra}
               color={
-                type === "addMoney"
+                type === "add"
                   ? theme.palette.others.green
                   : theme.palette.others.red
               }
@@ -262,7 +251,7 @@ const PotMoneyModal = ({
               hoverBgColor={lighten(theme.palette.primary.main, 0.2)}
             >
               <Typography fontSize="14px" fontWeight="bold">
-                {`Confirm ${type === "addMoney" ? "Addition" : "Withdrawal"}`}
+                {`Confirm ${type === "add" ? "Addition" : "Withdrawal"}`}
               </Typography>
             </Button>
           )}

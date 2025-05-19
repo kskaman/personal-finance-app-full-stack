@@ -30,6 +30,10 @@ export const signup = async (req, res) => {
       select: { id: true },
     });
 
+    if (!standardDefs.length) {
+      console.warn("No standard category definitions found.");
+    }
+
     // Run everything in one transaction
     const newUser = await prisma.$transaction(async (tx) => {
       // Create the user (with nested settings + balance)
@@ -62,6 +66,7 @@ export const signup = async (req, res) => {
             userId: created.id,
             categoryDefinitionId: def.id,
           })),
+          skipDuplicates: true,
         });
       }
 

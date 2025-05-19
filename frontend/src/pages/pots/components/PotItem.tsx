@@ -8,18 +8,18 @@ import { Pot } from "../../../types/models";
 
 interface Props {
   pot: Pot;
-  setDeleteModalOpen: () => void;
-  setEditModalOpen: () => void;
-  setPotAddMoneyModalOpen: () => void;
-  setPotWithdrawMoneyModalOpen: () => void;
+  onDelete: () => void;
+  onEdit: () => void;
+  onAddMoney: () => void;
+  onWithdrawMoney: () => void;
 }
 
 const PotItem = ({
   pot,
-  setDeleteModalOpen,
-  setEditModalOpen,
-  setPotAddMoneyModalOpen,
-  setPotWithdrawMoneyModalOpen,
+  onDelete,
+  onEdit,
+  onAddMoney,
+  onWithdrawMoney,
 }: Props) => {
   const theme = useTheme();
   return (
@@ -39,11 +39,7 @@ const PotItem = ({
         >
           {pot.name}
         </Typography>
-        <OptionsButton
-          type="pot"
-          onEdit={setEditModalOpen}
-          onDelete={setDeleteModalOpen}
-        />
+        <OptionsButton type="pot" onEdit={onEdit} onDelete={onDelete} />
       </Stack>
 
       <PotsProgressBar
@@ -59,7 +55,7 @@ const PotItem = ({
           height="100%"
           color={theme.palette.primary.main}
           backgroundColor={theme.palette.background.default}
-          onClick={setPotAddMoneyModalOpen}
+          onClick={onAddMoney}
           hoverBgColor="inherit"
           hoverColor={theme.palette.primary.main}
         >
@@ -72,7 +68,7 @@ const PotItem = ({
           height="100%"
           color={theme.palette.primary.main}
           backgroundColor={theme.palette.background.default}
-          onClick={setPotWithdrawMoneyModalOpen}
+          onClick={onWithdrawMoney}
           hoverBgColor="inherit"
           hoverColor={theme.palette.primary.main}
         >

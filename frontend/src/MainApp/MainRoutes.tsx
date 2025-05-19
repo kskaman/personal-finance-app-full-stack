@@ -10,6 +10,7 @@ import { useContext } from "react";
 import { SettingsContext } from "../pages/settings/context/SettingsContext";
 import { billsLoader } from "../pages/recurringBills/billsLoader";
 import queryClient from "../queryClient";
+import { potsLoader } from "../pages/pots/potsLoader";
 
 const MainRoutes = () => {
   const { displayedModules } = useContext(SettingsContext);
@@ -24,7 +25,13 @@ const MainRoutes = () => {
           <Route path="budgets" element={<BudgetsPage />} />
         )}
         {/* Only allow access to PotsPage if the module is enabled */}
-        {displayedModules.pots && <Route path="pots" element={<PotsPage />} />}
+        {displayedModules.pots && (
+          <Route
+            path="pots"
+            element={<PotsPage />}
+            loader={potsLoader(queryClient)}
+          />
+        )}
         {/* Only allow access to BillsPage if the module is enabled */}
         {displayedModules.bills && (
           <Route

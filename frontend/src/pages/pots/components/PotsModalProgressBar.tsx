@@ -4,7 +4,7 @@ import { SettingsContext } from "../../settings/context/SettingsContext";
 import { useContext } from "react";
 
 interface PotsProgressBarProps {
-  type: "addMoney" | "withdraw" | null;
+  type: "add" | "withdraw" | null;
   oldValue: number; // The pot total before the change
   valueChange: number; // The amount to add or withdraw (a positive number)
   target: number;
@@ -31,13 +31,13 @@ const PotsProgressBar = ({
   // For addMoney: valueChange must be >= 0 and not exceed (target - oldValue)
   // For withdraw: valueChange must be >= 0 and not exceed oldValue
   const isValid =
-    type === "addMoney"
+    type === "add"
       ? valueChange >= 0 && valueChange <= target
       : type === "withdraw"
       ? valueChange >= 0 && valueChange <= oldValue
       : false;
 
-  if (type === "addMoney") {
+  if (type === "add") {
     const newTotal = oldValue + (isValid ? valueChange : 0);
     displayedValue = newTotal;
     // Container is based on the new total percentage

@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 
-import { Balance, Budget, Category, Currency, Font, Pot, RecurringBill, Settings, Transaction } from "./models";
+import { Balance, Budget, Category, Currency, Font, Settings, Transaction } from "./models";
 
 
 export interface MarkerTheme {
@@ -23,10 +23,7 @@ export interface DataType {
     settings: Settings;
     transactions: Transaction[];
     budgets: Budget[];
-    pots: Pot[];
-    recurringBills: RecurringBill[];
     categories: Category[];
-    markerThemes: MarkerTheme[];
   }
 
   

@@ -52,7 +52,7 @@ const buildSchema = (usedPotNames: string[]) =>
     target: yup
       .string()
       .matches(
-        /^\d+(\.\d{0, 2})?$/,
+        /^\d+(\.\d{0,2})?$/,
         "Enter a valid number (up to 2 decimal places)."
       )
       .test(
@@ -77,6 +77,7 @@ const AddEditPotModal = ({
   themeOptions,
   markerTheme = "",
 }: AddEditPotModalProps) => {
+  console.log(potNamesUsed);
   const theme = useTheme();
   // Get default theme name based on provided markerTheme.
   const getDefaultThemeName = useCallback(() => {

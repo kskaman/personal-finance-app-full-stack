@@ -2,8 +2,6 @@ import { useEffect, useState } from "react";
 import { DataType } from "../types/Data";
 import BalanceTransactionsProvider from "./BalanceTransactionsProvider";
 import BudgetsProvider from "../pages/budgets/context/BudgetsProvider";
-import RecurringProvider from "../pages/recurringBills/context/RecurringProvider";
-import { PotsProvider } from "../pages/pots/context/PotsProvider";
 import CategoryMarkerProvider from "./CategoryMarkerProvider";
 import { SettingsProvider } from "../pages/settings/context/SettingsProvider";
 import Loader from "../ui/Loader";
@@ -48,10 +46,7 @@ const DataProvider = ({ children }: DataProviderProps) => {
           },
           transactions: user.transactions ?? [],
           budgets: user.budgets ?? [],
-          pots: user.pots ?? [],
-          recurringBills: user.recurringBills ?? [],
           categories: categories ?? [],
-          markerThemes: [],
         };
 
         setData(constructed);
@@ -95,19 +90,12 @@ const DataProvider = ({ children }: DataProviderProps) => {
       bills={data.settings.bills}
       budgets={data.settings.budgets}
     >
-      <CategoryMarkerProvider
-        categories={data.categories}
-        markerThemes={data.markerThemes}
-      >
+      <CategoryMarkerProvider categories={data.categories}>
         <BalanceTransactionsProvider
           balance={data.balance}
           transactions={data.transactions}
         >
-          <BudgetsProvider budgets={data.budgets}>
-            <RecurringProvider recurringBills={data.recurringBills}>
-              <PotsProvider pots={data.pots}>{children}</PotsProvider>
-            </RecurringProvider>
-          </BudgetsProvider>
+          <BudgetsProvider budgets={data.budgets}>{children}</BudgetsProvider>
         </BalanceTransactionsProvider>
       </CategoryMarkerProvider>
     </SettingsProvider>

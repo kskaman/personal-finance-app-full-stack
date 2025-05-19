@@ -14,38 +14,45 @@ import AddEditPotModal from "./components/AddEditPotModal";
 import PotMoneyModal from "./components/PotMoneyModal";
 import CategoryMarkerContext from "../../context/CategoryMarkerContext";
 import { updateUsedStatuses } from "../../utils/potsUtils";
-import {
-  BalanceTransactionsActionContext,
-  BalanceTransactionsDataContext,
-} from "../../context/BalanceTransactionsContext";
 import EmptyStatePage from "../../ui/EmptyStatePage";
-import { PotsActionContext, PotsDataContext } from "./context/PotsContext";
-import { Pot } from "../../types/models";
+import { Balance, Pot } from "../../types/models";
+import {
+  useCreatePot,
+  useDeletePot,
+  usePots,
+  usePotTransaction,
+  useUpdatePot,
+} from "./hooks/usePots";
+import DotLoader from "../../ui/DotLoader";
+import { useBalance, useUpdateBalance } from "../overview/hooks/useBalance";
 
 const PotsPage = () => {
   const theme = useTheme();
   const { containerRef, parentWidth } = useParentWidth();
 
-  const { pots } = useContext(PotsDataContext);
-  const { setPots } = useContext(PotsActionContext);
+  const { data: pots = [], isLoading, isError, refetch } = usePots();
+  const createPotMutation = useCreatePot();
+  const updatePotMutation = useUpdatePot();
+  const deletePotMutation = useDeletePot();
+  const potTxnMutation = usePotTransaction();
 
-  const potNamesUsed = pots.map((pot) => pot.name.toLowerCase());
-
-  const currentBalance = useContext(BalanceTransactionsDataContext).balance;
-  const setCurrentBalance = useContext(
-    BalanceTransactionsActionContext
-  ).setBalance;
+  const { data: balanceData } = useBalance();
+  const updateBalanceMutation = useUpdateBalance();
 
   const { markerThemes, setMarkerThemes } = useContext(CategoryMarkerContext);
 
+  const updatedMarkerThemes = useMemo(() => {
+    return updateUsedStatuses(pots, markerThemes).updatedMarkerThemes;
+  }, [pots, markerThemes]);
+
   const themeOptions = useMemo(() => {
-    return markerThemes.map((marker: MarkerTheme) => ({
+    return updatedMarkerThemes.map((marker: MarkerTheme) => ({
       value: marker.colorCode,
       label: marker.name,
       used: marker.usedInPots,
       colorCode: marker.colorCode,
     }));
-  }, [markerThemes]);
+  }, [updatedMarkerThemes]);
 
   // Update the usedInPots flags for markerThemes whenever pots change.
   useEffect(() => {
@@ -74,17 +81,23 @@ const PotsPage = () => {
 
   const [selectedPot, setSelectedPot] = useState<Pot | null>(null);
   const [mode, setMode] = useState<"add" | "edit" | null>(null);
-  const [potType, setPotType] = useState<"addMoney" | "withdraw" | null>(null);
+  const [potTxnType, setPotTxnType] = useState<"add" | "withdraw" | null>(null);
 
-  const handlePotDelete = (potName: string | null) => {
-    if (selectedPot === null) return;
+  const handlePotDelete = () => {
+    if (!selectedPot) return;
 
-    setCurrentBalance((prevBalance) => ({
-      ...prevBalance,
-      current: prevBalance.current + selectedPot.total,
-    }));
-    setPots((prevPots) => prevPots.filter((pot) => pot.name !== potName));
-    setSelectedPot(null);
+    deletePotMutation.mutate(selectedPot.id, {
+      onSuccess: () => {
+        if (!balanceData) return;
+        const newBalance: Balance = {
+          current: balanceData.current + selectedPot.total,
+          income: balanceData.income,
+          expenses: balanceData.expenses,
+        };
+        updateBalanceMutation.mutate(newBalance);
+        setSelectedPot(null);
+      },
+    });
   };
 
   const handleAddPot = ({
@@ -96,15 +109,11 @@ const PotsPage = () => {
     target: string;
     markerTheme: string;
   }) => {
-    setPots((prevPots) => [
-      ...prevPots,
-      {
-        name: potName,
-        target: parseFloat(target),
-        total: 0,
-        theme: markerTheme,
-      },
-    ]);
+    createPotMutation.mutate({
+      name: potName,
+      target: parseFloat(target),
+      theme: markerTheme,
+    });
   };
 
   const handleEditPot = ({
@@ -116,54 +125,72 @@ const PotsPage = () => {
     target: string;
     markerTheme: string;
   }) => {
-    setPots((prevPots) =>
-      prevPots.map((pot) =>
-        pot.name === potName
-          ? {
-              name: potName,
-              target: parseFloat(target),
-              total: 0,
-              theme: markerTheme,
-            }
-          : pot
-      )
+    if (!selectedPot) return;
+
+    updatePotMutation.mutate(
+      {
+        id: selectedPot.id,
+        data: { name: potName, target: parseFloat(target), theme: markerTheme },
+      },
+      {
+        onSuccess: () => setSelectedPot(null),
+      }
     );
   };
 
-  const handleUpdatePotAmount = (
-    potName: string,
-    newTotal: number,
-    newTarget: number,
-    newBalance: number
-  ) => {
-    setPots((prevPots) =>
-      prevPots.map((pot) =>
-        pot.name === potName
-          ? {
-              ...pot,
-              total: newTotal,
-              target: newTarget,
-            }
-          : pot
-      )
+  const handleUpdatePotAmount = (amount: number) => {
+    if (!selectedPot || !potTxnType) return;
+
+    potTxnMutation.mutate(
+      {
+        id: selectedPot.id,
+        data: { type: potTxnType, amount: amount },
+      },
+      {
+        onSuccess: () => {
+          if (!balanceData) return;
+          const newBalance: Balance = {
+            current:
+              potTxnType === "add"
+                ? balanceData.current - amount
+                : balanceData.current + amount,
+            income: balanceData.income,
+            expenses: balanceData.expenses,
+          };
+          updateBalanceMutation.mutate(newBalance);
+          setSelectedPot(null);
+        },
+      }
     );
-    setCurrentBalance((prevBalance) => ({
-      ...prevBalance,
-      current: newBalance,
-    }));
   };
 
-  const sortedPots = useMemo(() => {
-    return pots.slice().sort((a, b) => a.name.localeCompare(b.name));
-  }, [pots]);
+  const potNamesUsed = useMemo(
+    () => pots.map((p: Pot) => p.name.toLowerCase()),
+    [pots]
+  );
 
-  if (sortedPots.length === 0) {
+  // Loading UI
+  if (isLoading) return <DotLoader />;
+
+  //Error UI
+  if (isError) {
+    return (
+      <EmptyStatePage
+        message="Unable to fetch pots"
+        subText="Check your connection."
+        buttonLabel="Retry"
+        onButtonClick={refetch}
+      />
+    );
+  }
+
+  if (pots.length === 0) {
     return (
       <>
         <EmptyStatePage
           message="No Pots Yet"
           subText="Create your first pot to set aside money for a goal or expense."
-          buttonLabel="Create a Pot"
+          buttonLabel={parentWidth < 450 ? "+" : "+ Create a Pot"}
           onButtonClick={() => {
             setMode("add");
             openAddEditModal();
@@ -186,7 +213,7 @@ const PotsPage = () => {
             }
             mode={mode}
             potNamesUsed={potNamesUsed.filter(
-              (potName) => potName !== selectedPot?.name
+              (potName: string) => potName !== selectedPot?.name
             )}
             themeOptions={themeOptions}
           />
@@ -233,28 +260,28 @@ const PotsPage = () => {
               spacing="24px"
               columns={parentWidth <= MD_BREAK ? 1 : 2}
             >
-              {sortedPots.map((pot) => {
+              {pots.map((pot: Pot) => {
                 return (
                   <Grid key={pot.name} size={1}>
                     <PotItem
                       pot={pot}
-                      setDeleteModalOpen={() => {
+                      onDelete={() => {
                         setSelectedPot(pot);
                         openDeleteModal();
                       }}
-                      setEditModalOpen={() => {
+                      onEdit={() => {
                         setSelectedPot(pot);
                         setMode("edit");
                         openAddEditModal();
                       }}
-                      setPotAddMoneyModalOpen={() => {
+                      onAddMoney={() => {
                         setSelectedPot(pot);
-                        setPotType("addMoney");
+                        setPotTxnType("add");
                         openPotMoneyModal();
                       }}
-                      setPotWithdrawMoneyModalOpen={() => {
+                      onWithdrawMoney={() => {
                         setSelectedPot(pot);
-                        setPotType("withdraw");
+                        setPotTxnType("withdraw");
                         openPotMoneyModal();
                       }}
                     />
@@ -272,7 +299,7 @@ const PotsPage = () => {
               setSelectedPot(null);
               closeDeleteModal();
             }}
-            handleDelete={() => handlePotDelete(selectedPot?.name || null)}
+            handleDelete={() => handlePotDelete()}
             label={selectedPot?.name || ""}
             warningText={`Are you sure you want to delete this pot? The money in the pot 
               will be added to current balance. This action cannot be
@@ -281,7 +308,7 @@ const PotsPage = () => {
           />
         )}
 
-        {isAddEditModalOpen && (
+        {isAddEditModalOpen && selectedPot && (
           <AddEditPotModal
             open={isAddEditModalOpen}
             onClose={() => {
@@ -298,7 +325,8 @@ const PotsPage = () => {
             }
             mode={mode}
             potNamesUsed={potNamesUsed.filter(
-              (potName) => potName !== selectedPot?.name
+              (potName: string) =>
+                potName.toLowerCase() !== selectedPot?.name.toLowerCase()
             )}
             potName={selectedPot?.name}
             targetVal={selectedPot?.target}
@@ -307,27 +335,20 @@ const PotsPage = () => {
           />
         )}
 
-        {isPotMoneyModalOpen && selectedPot && (
+        {isPotMoneyModalOpen && selectedPot && balanceData && (
           <PotMoneyModal
             open={isPotMoneyModalOpen}
             onClose={() => {
               closePotMoneyModal();
               setSelectedPot(null);
-              setPotType(null);
+              setPotTxnType(null);
             }}
-            type={potType}
+            type={potTxnType}
             potName={selectedPot.name}
             potTotal={selectedPot.total}
             potTarget={selectedPot.target}
-            updatePotAmount={(newTotal, newTarget, newBalance) =>
-              handleUpdatePotAmount(
-                selectedPot.name,
-                newTotal,
-                newTarget,
-                newBalance
-              )
-            }
-            maxLimit={currentBalance.current}
+            updatePotAmount={(amount) => handleUpdatePotAmount(amount)}
+            maxLimit={balanceData?.current}
           />
         )}
       </Box>

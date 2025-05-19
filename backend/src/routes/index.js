@@ -7,6 +7,7 @@ import categoryRoutes from "./categoryRoutes.js";
 import transactionRoutes from "./transactionRoutes.js";
 import billRoutes from "./billRoutes.js";
 import potRoutes from "./potRoutes.js";
+import balanceRoutes from "./balanceRoutes.js";
 
 const router = Router();
 
@@ -17,5 +18,6 @@ router.use("/categories", categoryRoutes);
 router.use("/transactions", transactionRoutes);
 router.use("/bills", billRoutes);
 router.use("/pots", potRoutes);
+router.use("/balance", balanceRoutes);
 
 export default router;

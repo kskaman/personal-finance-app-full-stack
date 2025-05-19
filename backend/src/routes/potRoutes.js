@@ -4,19 +4,17 @@ import {
   addPot,
   editPot,
   deletePot,
-  addToPot,
-  withdrawFromPot,
+  potTransaction,
 } from "../controllers/potsController.js";
 import { authenticate } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
-router.use(authenticate());
+router.use(authenticate);
 
 router.get("/", getPots);
 router.post("/", addPot);
-router.get("/:id", editPot);
+router.put("/:id", editPot);
 router.delete("/:id", deletePot);
-router.post("/:id/add", addToPot);
-router.post("/:id/withdraw", withdrawFromPot);
+router.post("/:id/transactions", potTransaction);
 
 export default router;
