@@ -8,7 +8,7 @@ import {
   useTheme,
 } from "@mui/material";
 import {
-  formatDateToReadable,
+  formatDateToReadableString,
   formatNumber,
   getInitials,
 } from "../../../utils/utilityFunctions";
@@ -37,7 +37,7 @@ const BudgetTransactionsModal = ({
       <List>
         {transactionsForCategory.map((transaction, index) => {
           return (
-            <div key={transaction.date}>
+            <div key={transaction.id}>
               <ListItem
                 sx={{
                   display: "flex",
@@ -97,7 +97,7 @@ const BudgetTransactionsModal = ({
                     fontSize="12px"
                     color={theme.palette.primary.light}
                   >
-                    {formatDateToReadable(transaction.date)}
+                    {formatDateToReadableString(transaction.date)}
                   </Typography>
                 </Stack>
               </ListItem>

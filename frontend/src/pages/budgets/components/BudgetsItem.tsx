@@ -16,7 +16,7 @@ import OptionsButton from "../../../ui/OptionsButton";
 import BudgetsProgressBar from "./BudgetsProgressBar";
 import CaretRightIcon from "../../../Icons/CaretRightIcon";
 import {
-  formatDateToReadable,
+  formatDateToReadableString,
   formatNumber,
   getInitials,
 } from "../../../utils/utilityFunctions";
@@ -174,7 +174,7 @@ const BudgetsItem = ({
                         fontSize="12px"
                         color={theme.palette.primary.light}
                       >
-                        {formatDateToReadable(transaction.date)}
+                        {formatDateToReadableString(transaction.date)}
                       </Typography>
                     </Stack>
                   </ListItem>

@@ -19,30 +19,35 @@ const billSelect = {
 
 /* GET /api/bills?search=&sort */
 export const getBills = async (req, res) => {
-  const where = {
-    userId: req.userId,
-  };
-
-  const raw = await prisma.recurringBill.findMany({
-    where,
-    select: billSelect,
-  });
-
-  const bills = raw.map((b) => {
-    const categoryName = b.category?.categoryDefinition?.name;
-
-    return {
-      id: b.id,
-      name: b.name,
-      amount: b.amount,
-      dueDate: b.dueDate,
-      lastPaid: b.lastPaid,
-      theme: b.theme,
-      category: categoryName,
+  try {
+    const where = {
+      userId: req.userId,
     };
-  });
 
-  res.json(bills);
+    const raw = await prisma.recurringBill.findMany({
+      where,
+      select: billSelect,
+    });
+
+    const bills = raw.map((b) => {
+      const categoryName = b.category?.categoryDefinition?.name;
+
+      return {
+        id: b.id,
+        name: b.name,
+        amount: b.amount,
+        dueDate: b.dueDate,
+        lastPaid: b.lastPaid,
+        theme: b.theme,
+        category: categoryName,
+      };
+    });
+
+    res.json(bills);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
 };
 
 /* GET /api/bills/:id */
@@ -77,7 +82,7 @@ export const addBill = async (req, res) => {
     const { name, category, amount, dueDate, theme } = req.body;
     const userId = req.userId;
 
-    // find the master definition
+    // find the category definition
     const categoryDef = await prisma.categoryDefinition.findUnique({
       where: {
         name: category,

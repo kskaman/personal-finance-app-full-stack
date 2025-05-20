@@ -8,6 +8,7 @@ import transactionRoutes from "./transactionRoutes.js";
 import billRoutes from "./billRoutes.js";
 import potRoutes from "./potRoutes.js";
 import balanceRoutes from "./balanceRoutes.js";
+import budgetRoutes from "./budgetRoutes.js";
 
 const router = Router();
 
@@ -19,5 +20,6 @@ router.use("/transactions", transactionRoutes);
 router.use("/bills", billRoutes);
 router.use("/pots", potRoutes);
 router.use("/balance", balanceRoutes);
+router.use("/budgets", budgetRoutes);
 
 export default router;

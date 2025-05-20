@@ -51,6 +51,27 @@ export const formatDateToReadable = (dateString: string) => {
 
 
 
+const MONTH_SHORT = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+] as const;
+
+const pad2 = (n: number) => n.toString().padStart(2, "0");
+
+/**
+ * Convert a Date → "DD Mon YYYY"
+ *    2025-05-19T…  →  "19 May 2025"
+ */
+export const formatDateToReadableString = (d: Date): string => {
+  const day   = pad2(d.getUTCDate());
+  const month = MONTH_SHORT[d.getUTCMonth()]; // 0-based
+  const year  = d.getUTCFullYear();
+  return `${day} ${month} ${year}`;
+};
+
+
+
+
 
 // Function to get initials from a name
 export const getInitials = (name: string) => {

@@ -2,6 +2,14 @@ import { ReactNode } from "react";
 
 import { Balance, Budget, Category, Currency, Font, Settings, Transaction } from "./models";
 
+export interface BudgetStats {
+  totalMaximum: number;
+  topBudgets: {
+    maximum: number;
+    category: string;
+    theme: string;
+  }[];
+}
 
 export interface MarkerTheme {
     name: string;

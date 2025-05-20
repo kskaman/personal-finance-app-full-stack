@@ -76,6 +76,71 @@ export const getTransaction = async (req, res) => {
   res.json(flatten(row));
 };
 
+// Get transaction per category for budgets for particular month - POST /api/transactions/budgetCategories
+export const getMonthlyTransactionsByCategoryNames = async (req, res) => {
+  const userId = req.userId;
+  const { categoryNames, month } = req.body;
+
+  if (!Array.isArray(categoryNames) || typeof month !== "string") {
+    return res.status(400).json({ message: "Invalid request payload" });
+  }
+
+  if (categoryNames.length === 0) {
+    return res.status(201).json({});
+  }
+
+  try {
+    const start = new Date(`${month}-01T00:00:00Z`);
+    const end = new Date(start);
+    end.setMonth(end.getMonth() + 1); // Exclusive upper bound
+
+    const transactions = await prisma.transaction.findMany({
+      where: {
+        userId,
+        date: {
+          gte: start,
+          lt: end,
+        },
+        category: {
+          categoryDefinition: {
+            name: {
+              in: categoryNames,
+            },
+          },
+        },
+      },
+      include: {
+        category: {
+          include: {
+            categoryDefinition: true,
+          },
+        },
+      },
+      orderBy: {
+        date: "desc",
+      },
+    });
+
+    // Group transactions by category name
+    const grouped = categoryNames.reduce((acc, name) => {
+      acc[name] = [];
+      return acc;
+    }, {});
+
+    for (const txn of transactions) {
+      const name = txn.category?.categoryDefinition?.name;
+      if (name && grouped[name]) {
+        grouped[name].push(txn);
+      }
+    }
+
+    return res.json(grouped);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+};
+
 /**
  * Create a transaction - POST '/api/transactions'
  */

@@ -140,3 +140,39 @@ export const potTransaction = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+export const getPotStats = async (req, res) => {
+  const userId = req.userId;
+
+  try {
+    // Get total saved (sum of total from all pots)
+    const aggregate = await prisma.pot.aggregate({
+      where: { userId },
+      _sum: {
+        total: true,
+      },
+    });
+
+    // Get top 4 pots sorted by name (alphabetically)
+    const topPots = await prisma.pot.findMany({
+      where: { userId },
+      select: {
+        name: true,
+        total: true,
+        theme: true,
+      },
+      orderBy: {
+        name: "asc",
+      },
+      take: 4,
+    });
+
+    res.json({
+      totalSaved: aggregate._sum.total,
+      topPots,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Server error" });
+  }
+};

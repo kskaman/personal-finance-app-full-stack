@@ -14,7 +14,6 @@ import SubContainer from "../../ui/SubContainer";
 import { useContext, useMemo, useState, useEffect } from "react";
 
 import { formatNumber } from "../../utils/utilityFunctions";
-import { BalanceTransactionsDataContext } from "../../context/BalanceTransactionsContext";
 import { MarkerTheme } from "../../types/Data";
 import Button from "../../ui/Button";
 import BudgetsItem from "./components/BudgetsItem";
@@ -26,45 +25,52 @@ import useModal from "../../customHooks/useModal";
 import CategoryMarkerContext from "../../context/CategoryMarkerContext";
 import { updateUsedStatuses } from "../../utils/budgetUtils";
 import EmptyStatePage from "../../ui/EmptyStatePage";
-import {
-  BudgetsActionContext,
-  BudgetsDataContext,
-} from "./context/BudgetsContext";
 import { SettingsContext } from "../settings/context/SettingsContext";
-import { Budget, Category, Transaction } from "../../types/models";
+import { Budget, Category } from "../../types/models";
+import {
+  useBudgets,
+  useBudgetStats,
+  useBudgetTransactions,
+  useCreateBudget,
+  useDeleteBudget,
+  useUpdateBudget,
+} from "./hooks/useBudgets";
+import DotLoader from "../../ui/DotLoader";
+import { computeMonthlySpentByCategory } from "../../utils/monthLySpent";
 
 const BudgetsPage = () => {
   const theme = useTheme();
-  const { budgets, budgetsTotal } = useContext(BudgetsDataContext);
-  const { setBudgets } = useContext(BudgetsActionContext);
-  const { transactions, monthlySpentByCategory } = useContext(
-    BalanceTransactionsDataContext
-  );
+
+  const { data: budgets = [], isLoading, isError, refetch } = useBudgets();
+  const {
+    data: stats,
+    isLoading: isStatsLoading,
+    isError: isStatsError,
+    refetch: refetchStats,
+  } = useBudgetStats();
+
+  const addBudgetMutation = useCreateBudget();
+  const deleteBudgetMutation = useDeleteBudget();
+  const updateBudgetMutation = useUpdateBudget();
+
   const { markerThemes, categories, setMarkerThemes, setCategories } =
     useContext(CategoryMarkerContext);
+
   const currencySymbol = useContext(SettingsContext).selectedCurrency;
 
-  const budgetCategories = budgets.map((budget) => budget.category);
+  const budgetCategories = budgets.map((budget: Budget) => budget.category);
 
-  // Memoize computed values for performance.
-  const transactionsPerCategory = useMemo(() => {
-    return budgetCategories.reduce<Record<string, Transaction[]>>(
-      (acc, category) => {
-        acc[category] = transactions.filter(
-          (txn: Transaction) => txn.category === category
-        );
-        return acc;
-      },
-      {}
-    );
-  }, [budgetCategories, transactions]);
+  const {
+    data: transactionsMap = {},
+    isLoading: isTxnMapLoading,
+    isError: isTxnMapError,
+    refetch: refetchTxnMap,
+  } = useBudgetTransactions(budgetCategories);
 
-  const monthlySpent = useMemo(() => {
-    return budgetCategories.reduce<Record<string, number>>((acc, category) => {
-      acc[category] = monthlySpentByCategory[category] || 0;
-      return acc;
-    }, {});
-  }, [budgetCategories, monthlySpentByCategory]);
+  const monthlySpentByCategory = useMemo(
+    () => computeMonthlySpentByCategory(transactionsMap),
+    [transactionsMap]
+  );
 
   // Update the usedInBudgets flags for categories and markerThemes whenever budgets change.
   useEffect(() => {
@@ -117,21 +123,20 @@ const BudgetsPage = () => {
   const [mode, setMode] = useState<"edit" | "add" | null>(null);
 
   const handleEditBudget = ({
-    category,
     maxSpend,
     markerTheme,
   }: {
-    category: string;
     maxSpend: string;
     markerTheme: string;
   }) => {
-    setBudgets((prevBudgets) =>
-      prevBudgets.map((budget) =>
-        budget.category === category
-          ? { ...budget, maximum: parseFloat(maxSpend), theme: markerTheme }
-          : budget
-      )
-    );
+    if (selectedBudget === null) return;
+
+    updateBudgetMutation.mutate({
+      id: selectedBudget.id,
+      maximum: parseFloat(maxSpend),
+      theme: markerTheme,
+    });
+    setSelectedBudget(null);
   };
 
   const handleAddBudget = ({
@@ -143,26 +148,41 @@ const BudgetsPage = () => {
     maxSpend: string;
     markerTheme: string;
   }) => {
-    setBudgets((prevBudgets) => [
-      ...prevBudgets,
-      { category, maximum: parseFloat(maxSpend), theme: markerTheme },
-    ]);
+    addBudgetMutation.mutate({
+      category,
+      maximum: parseFloat(maxSpend),
+      theme: markerTheme,
+    });
   };
 
-  const handleBudgetDelete = (itemLabel: string) => {
-    if (itemLabel === "") return;
-    const newBudgets = budgets.filter(
-      (budget) => budget.category !== itemLabel
-    );
-    setBudgets(newBudgets);
+  const handleBudgetDelete = () => {
+    if (selectedBudget === null) {
+      return;
+    }
+    deleteBudgetMutation.mutate(selectedBudget.id);
     setSelectedBudget(null);
   };
 
-  const sortedBudgets = useMemo(() => {
-    return budgets.slice().sort((a, b) => a.category.localeCompare(b.category));
-  }, [budgets]);
+  if (isLoading || isStatsLoading || isTxnMapLoading) {
+    return <DotLoader />;
+  }
 
-  if (budgets.length === 0) {
+  if (isError || isStatsError || isTxnMapError) {
+    return (
+      <EmptyStatePage
+        message="Unable to fetch pots"
+        subText="Check your connection."
+        buttonLabel="Retry"
+        onButtonClick={() => {
+          refetch();
+          refetchStats();
+          refetchTxnMap();
+        }}
+      />
+    );
+  }
+
+  if (budgets.length === 0 || stats === undefined) {
     return (
       <>
         <EmptyStatePage
@@ -255,8 +275,8 @@ const BudgetsPage = () => {
                   }
                 >
                   <BudgetsPieChart
-                    spendings={Object.values(monthlySpent)}
-                    limit={budgetsTotal}
+                    spendings={Object.values(monthlySpentByCategory)}
+                    limit={stats.totalMaximum}
                     colors={budgets.map((b) => b.theme)}
                   />
                   <Stack
@@ -272,53 +292,62 @@ const BudgetsPage = () => {
                       Spending Summary
                     </Typography>
                     <List>
-                      {sortedBudgets.map((budget, index) => (
-                        <div key={budget.category}>
-                          <ListItem
-                            sx={{
-                              display: "flex",
-                              alignItems: "center",
-                              margin: "16px 0",
-                              padding: 0,
-                              height: "21px",
-                              color: theme.palette.primary.light,
-                            }}
-                          >
-                            <Box
-                              height="21px"
-                              width="4px"
-                              bgcolor={budget.theme}
-                              borderRadius="8px"
-                              marginRight="16px"
-                            />
-                            <Typography fontSize="14px">
-                              {budget.category}
-                            </Typography>
-                            <Stack
-                              direction="row"
-                              alignItems="center"
-                              gap="4px"
-                              marginLeft="auto"
+                      {stats.topBudgets.map(
+                        (
+                          budget: {
+                            category: string;
+                            maximum: number;
+                            theme: string;
+                          },
+                          index: number
+                        ) => (
+                          <div key={budget.category}>
+                            <ListItem
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                margin: "16px 0",
+                                padding: 0,
+                                height: "21px",
+                                color: theme.palette.primary.light,
+                              }}
                             >
-                              <Typography
-                                fontSize="16px"
-                                fontWeight="bold"
-                                color={theme.palette.primary.main}
-                              >
-                                {`${currencySymbol}${formatNumber(
-                                  monthlySpent[budget.category]
-                                )}`}
-                              </Typography>
+                              <Box
+                                height="21px"
+                                width="4px"
+                                bgcolor={budget.theme}
+                                borderRadius="8px"
+                                marginRight="16px"
+                              />
                               <Typography fontSize="14px">
-                                {`of ${currencySymbol}${formatNumber(
-                                  budget.maximum
-                                )}`}
+                                {budget.category}
                               </Typography>
-                            </Stack>
-                          </ListItem>
-                          {index < budgets.length - 1 && <Divider />}
-                        </div>
-                      ))}
+                              <Stack
+                                direction="row"
+                                alignItems="center"
+                                gap="4px"
+                                marginLeft="auto"
+                              >
+                                <Typography
+                                  fontSize="16px"
+                                  fontWeight="bold"
+                                  color={theme.palette.primary.main}
+                                >
+                                  {`${currencySymbol}${formatNumber(
+                                    monthlySpentByCategory[budget.category]
+                                  )}`}
+                                </Typography>
+                                <Typography fontSize="14px">
+                                  {`of ${currencySymbol}${formatNumber(
+                                    budget.maximum
+                                  )}`}
+                                </Typography>
+                              </Stack>
+                            </ListItem>
+                            {index < budgets.length - 1 && <Divider />}
+                          </div>
+                        )
+                      )}
                     </List>
                   </Stack>
                 </Stack>
@@ -339,10 +368,10 @@ const BudgetsPage = () => {
                         openDeleteModal();
                       }}
                       budget={budget}
-                      monthlySpentForCategory={monthlySpent[budget.category]}
-                      transactionsForCategory={
-                        transactionsPerCategory[budget.category]
+                      monthlySpentForCategory={
+                        monthlySpentByCategory[budget.category]
                       }
+                      transactionsForCategory={transactionsMap[budget.category]}
                     />
                   </div>
                 ))}
@@ -359,9 +388,7 @@ const BudgetsPage = () => {
               setSelectedBudget(null);
               closeDeleteModal();
             }}
-            handleDelete={() =>
-              handleBudgetDelete(selectedBudget?.category || "")
-            }
+            handleDelete={() => handleBudgetDelete()}
             label={selectedBudget?.category || ""}
             type="budget"
           />
