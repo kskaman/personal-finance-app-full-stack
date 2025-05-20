@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { DataType } from "../types/Data";
 import BalanceTransactionsProvider from "./BalanceTransactionsProvider";
-import BudgetsProvider from "../pages/budgets/context/BudgetsProvider";
 import CategoryMarkerProvider from "./CategoryMarkerProvider";
 import { SettingsProvider } from "../pages/settings/context/SettingsProvider";
 import Loader from "../ui/Loader";
@@ -25,10 +24,8 @@ const DataProvider = ({ children }: DataProviderProps) => {
       try {
         // fetch user
         const user = await getUserData();
-        console.log(user);
         // fetch categories separately
         const categories = await getCategories();
-        console.log(categories);
 
         const constructed: DataType = {
           userId: user.id,
@@ -45,7 +42,6 @@ const DataProvider = ({ children }: DataProviderProps) => {
             budgets: user.settings.budgets,
           },
           transactions: user.transactions ?? [],
-          budgets: user.budgets ?? [],
           categories: categories ?? [],
         };
 
@@ -95,7 +91,7 @@ const DataProvider = ({ children }: DataProviderProps) => {
           balance={data.balance}
           transactions={data.transactions}
         >
-          <BudgetsProvider budgets={data.budgets}>{children}</BudgetsProvider>
+          {children}
         </BalanceTransactionsProvider>
       </CategoryMarkerProvider>
     </SettingsProvider>

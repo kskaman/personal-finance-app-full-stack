@@ -11,10 +11,9 @@ import SetTitle from "../../ui/SetTitle";
 import BudgetsPieChart from "./components/BudgetsPieChart";
 import PageDiv from "../../ui/PageDiv";
 import SubContainer from "../../ui/SubContainer";
-import { useContext, useMemo, useState, useEffect, useCallback } from "react";
+import { useContext, useMemo, useState, useCallback } from "react";
 
 import { formatNumber } from "../../utils/utilityFunctions";
-import { MarkerTheme } from "../../types/Data";
 import Button from "../../ui/Button";
 import BudgetsItem from "./components/BudgetsItem";
 import useParentWidth from "../../customHooks/useParentWidth";
@@ -37,9 +36,12 @@ import {
 } from "./hooks/useBudgets";
 import DotLoader from "../../ui/DotLoader";
 import { computeMonthlySpentByCategory } from "../../utils/monthLySpent";
+import { defaultThemes } from "../../constants/markerThemes";
 
 const BudgetsPage = () => {
   const theme = useTheme();
+
+  const currencySymbol = useContext(SettingsContext).selectedCurrency;
 
   const { data: budgets = [], isLoading, isError, refetch } = useBudgets();
   const {
@@ -49,17 +51,7 @@ const BudgetsPage = () => {
     refetch: refetchStats,
   } = useBudgetStats();
 
-  const addBudgetMutation = useCreateBudget();
-  const deleteBudgetMutation = useDeleteBudget();
-  const updateBudgetMutation = useUpdateBudget();
-
-  const { markerThemes, categories, setMarkerThemes, setCategories } =
-    useContext(CategoryMarkerContext);
-
-  const currencySymbol = useContext(SettingsContext).selectedCurrency;
-
   const budgetCategories = budgets.map((budget: Budget) => budget.category);
-
   const {
     data: transactionsMap = {},
     isLoading: isTxnMapLoading,
@@ -67,40 +59,32 @@ const BudgetsPage = () => {
     refetch: refetchTxnMap,
   } = useBudgetTransactions(budgetCategories);
 
+  const addBudgetMutation = useCreateBudget();
+  const deleteBudgetMutation = useDeleteBudget();
+  const updateBudgetMutation = useUpdateBudget();
+
+  const { categories } = useContext(CategoryMarkerContext);
+
+  // Build dropdown options using the updated context arrays.
+  const categoryOptions = useMemo(() => {
+    return categories.map((cat: Category) => {
+      const flag = budgetCategories.includes(cat.name);
+      return {
+        value: cat.name,
+        label: cat.name,
+        used: flag,
+      };
+    });
+  }, [budgetCategories, categories]);
+
   const monthlySpentByCategory = useMemo(
     () => computeMonthlySpentByCategory(transactionsMap),
     [transactionsMap]
   );
 
-  // Update the usedInBudgets flags for categories and markerThemes whenever budgets change.
-  useEffect(() => {
-    const { updatedCategories, updatedMarkerThemes } = updateUsedStatuses(
-      budgets,
-      categories,
-      markerThemes
-    );
-    setCategories(updatedCategories);
-    setMarkerThemes(updatedMarkerThemes);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  const updatedThemeOptions = useMemo(() => {
+    return updateUsedStatuses(budgets, defaultThemes).updatedMarkerThemes;
   }, [budgets]);
-
-  // Build dropdown options using the updated context arrays.
-  const categoryOptions = useMemo(() => {
-    return categories.map((cat: Category) => ({
-      value: cat.name,
-      label: cat.name,
-      used: cat.usedInBudgets,
-    }));
-  }, [categories]);
-
-  const themeOptions = useMemo(() => {
-    return markerThemes.map((marker: MarkerTheme) => ({
-      value: marker.colorCode,
-      label: marker.name,
-      used: marker.usedInBudgets,
-      colorCode: marker.colorCode,
-    }));
-  }, [markerThemes]);
 
   const { containerRef, parentWidth } = useParentWidth();
   const isParentLg = parentWidth < LG_BREAK;
@@ -122,19 +106,22 @@ const BudgetsPage = () => {
   const [selectedBudget, setSelectedBudget] = useState<Budget | null>(null);
   const [mode, setMode] = useState<"edit" | "add" | null>(null);
 
-  const handleEditBudget = useCallback(
-    ({ maxSpend, markerTheme }: { maxSpend: string; markerTheme: string }) => {
-      if (selectedBudget === null) return;
+  const handleEditBudget = ({
+    maxSpend,
+    markerTheme,
+  }: {
+    maxSpend: string;
+    markerTheme: string;
+  }) => {
+    if (selectedBudget === null) return;
 
-      updateBudgetMutation.mutate({
-        id: selectedBudget.id,
-        maximum: parseFloat(maxSpend),
-        theme: markerTheme,
-      });
-      setSelectedBudget(null);
-    },
-    [selectedBudget, updateBudgetMutation]
-  );
+    updateBudgetMutation.mutate({
+      id: selectedBudget.id,
+      maximum: parseFloat(maxSpend),
+      theme: markerTheme,
+    });
+    setSelectedBudget(null);
+  };
 
   const handleAddBudget = useCallback(
     ({
@@ -170,7 +157,7 @@ const BudgetsPage = () => {
   if (isError || isStatsError || isTxnMapError) {
     return (
       <EmptyStatePage
-        message="Unable to fetch pots"
+        message="Unable to fetch budgets"
         subText="Check your connection."
         buttonLabel="Retry"
         onButtonClick={() => {
@@ -212,7 +199,7 @@ const BudgetsPage = () => {
                 : () => {}
             }
             categoryOptions={categoryOptions}
-            themeOptions={themeOptions}
+            themeOptions={updatedThemeOptions}
           />
         )}
       </>
@@ -415,7 +402,7 @@ const BudgetsPage = () => {
             maximumSpend={selectedBudget?.maximum}
             markerTheme={selectedBudget?.theme}
             categoryOptions={categoryOptions}
-            themeOptions={themeOptions}
+            themeOptions={updatedThemeOptions}
           />
         )}
       </Box>

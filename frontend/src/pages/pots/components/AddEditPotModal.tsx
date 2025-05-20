@@ -77,7 +77,6 @@ const AddEditPotModal = ({
   themeOptions,
   markerTheme = "",
 }: AddEditPotModalProps) => {
-  console.log(potNamesUsed);
   const theme = useTheme();
   // Get default theme name based on provided markerTheme.
   const getDefaultThemeName = useCallback(() => {

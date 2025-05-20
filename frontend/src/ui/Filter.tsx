@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useContext, useState } from "react";
 
 import {
   SelectChangeEvent,
@@ -14,7 +14,7 @@ import FilterIcon from "../Icons/FilterIcon";
 import { XL_BREAK, MD_BREAK } from "../constants/widthConstants";
 import CustomDropdown from "./CustomDropdown";
 import SearchInput from "./SearchInput";
-import { categories } from "../constants/categories";
+import CategoryMarkerContext from "../context/CategoryMarkerContext";
 
 interface FilterProps {
   parentWidth: number;
@@ -97,6 +97,9 @@ const Filter = ({
   monthOptions,
 }: FilterProps) => {
   const theme = useTheme();
+  const categories = useContext(CategoryMarkerContext).categories;
+  const categoryNames = categories.map((cat) => cat.name);
+
   const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   // Determine if extra filters (category and month) are provided.
@@ -128,7 +131,7 @@ const Filter = ({
           <Grid>
             <FilterOption
               label="Category"
-              options={["All Transactions", ...categories]}
+              options={["All Transactions", ...categoryNames]}
               value={category!}
               width="250px"
               onChange={(event) => setCategory!(event.target.value)}
@@ -160,7 +163,7 @@ const Filter = ({
           <Grid size={6}>
             <FilterOption
               label="Category"
-              options={["All Transactions", ...categories]}
+              options={["All Transactions", ...categoryNames]}
               value={category!}
               width="100%"
               onChange={(event) => setCategory!(event.target.value)}
@@ -189,7 +192,7 @@ const Filter = ({
           />
           <FilterOption
             label="Category"
-            options={["All Transactions", ...categories]}
+            options={["All Transactions", ...categoryNames]}
             value={category!}
             width="100%"
             onChange={(event) => setCategory!(event.target.value)}

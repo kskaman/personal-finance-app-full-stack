@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import {
   Box,
@@ -18,7 +18,8 @@ import Button from "../../../ui/Button";
 
 import ActionModal from "../../../ui/ActionModal";
 import ModalTextField from "../../../ui/ModalTextField";
-import { categories } from "../../../constants/categories.ts";
+import CategoryMarkerContext from "../../../context/CategoryMarkerContext";
+import { Category } from "../../../types/models";
 
 // Interfaces and Props
 interface FormValues {
@@ -149,9 +150,11 @@ const AddEditTransactionModal = ({
     },
   });
 
-  const categoryOptions = categories.map((cat: string) => ({
-    value: cat,
-    label: cat,
+  const categories = useContext(CategoryMarkerContext).categories;
+
+  const categoryOptions = categories.map((cat: Category) => ({
+    value: cat.name,
+    label: cat.name,
   }));
 
   // State for inline confirmation override

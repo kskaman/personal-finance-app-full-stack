@@ -19,7 +19,6 @@ export const getUserData = async (req, res) => {
       include: {
         settings: true,
         balance: true,
-        categories: true,
       },
     });
 

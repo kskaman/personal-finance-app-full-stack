@@ -1,14 +1,14 @@
-import { useEffect } from "react";
+import { useContext, useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { lighten, Stack, Typography, useTheme } from "@mui/material";
 import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import ModalSelectDropdown from "../../../ui/ModalSelectDropdown";
 import Button from "../../../ui/Button";
-import { dateOptions } from "../../../constants/dates";
+import { dateOptions } from "../../../data/dates";
 import ActionModal from "../../../ui/ActionModal";
 import ModalTextField from "../../../ui/ModalTextField";
-import { categories } from "../../../constants/categories";
+import CategoryMarkerContext from "../../../context/CategoryMarkerContext";
 
 // Types & Interfaces
 export interface BillFormValues {
@@ -65,6 +65,8 @@ const AddEditBillModal = ({
       dueDate: "",
     },
   });
+
+  const categories = useContext(CategoryMarkerContext).categories;
 
   // Reset the form when modal opens or billData changes.
   useEffect(() => {
@@ -124,8 +126,8 @@ const AddEditBillModal = ({
                 value={field.value}
                 onChange={field.onChange}
                 options={categories.map((cat) => ({
-                  value: cat,
-                  label: cat,
+                  value: cat.name,
+                  label: cat.name,
                 }))}
                 label="Category"
                 error={error}

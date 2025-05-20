@@ -83,7 +83,6 @@ export enum Font {
     id: string;
     userId: string;
     name: string;
-    usedInBudgets: boolean;
     type: CategoryType;
   }
   

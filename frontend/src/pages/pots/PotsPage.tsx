@@ -2,17 +2,15 @@ import { Box, Stack, Typography, useTheme } from "@mui/material";
 import Grid from "@mui/material/Grid2";
 import SetTitle from "../../ui/SetTitle";
 import PageDiv from "../../ui/PageDiv";
-import { useContext, useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import PotItem from "./components/PotItem";
 import Button from "../../ui/Button";
 import useParentWidth from "../../customHooks/useParentWidth";
 import { MD_BREAK } from "../../constants/widthConstants";
 import useModal from "../../customHooks/useModal";
-import { MarkerTheme } from "../../types/Data";
 import DeleteModal from "../../ui/DeleteModal";
 import AddEditPotModal from "./components/AddEditPotModal";
 import PotMoneyModal from "./components/PotMoneyModal";
-import CategoryMarkerContext from "../../context/CategoryMarkerContext";
 import { updateUsedStatuses } from "../../utils/potsUtils";
 import EmptyStatePage from "../../ui/EmptyStatePage";
 import { Balance, Pot } from "../../types/models";
@@ -25,6 +23,7 @@ import {
 } from "./hooks/usePots";
 import DotLoader from "../../ui/DotLoader";
 import { useBalance, useUpdateBalance } from "../overview/hooks/useBalance";
+import { defaultThemes } from "../../constants/markerThemes";
 
 const PotsPage = () => {
   const theme = useTheme();
@@ -39,26 +38,8 @@ const PotsPage = () => {
   const { data: balanceData } = useBalance();
   const updateBalanceMutation = useUpdateBalance();
 
-  const { markerThemes, setMarkerThemes } = useContext(CategoryMarkerContext);
-
-  const updatedMarkerThemes = useMemo(() => {
-    return updateUsedStatuses(pots, markerThemes).updatedMarkerThemes;
-  }, [pots, markerThemes]);
-
-  const themeOptions = useMemo(() => {
-    return updatedMarkerThemes.map((marker: MarkerTheme) => ({
-      value: marker.colorCode,
-      label: marker.name,
-      used: marker.usedInPots,
-      colorCode: marker.colorCode,
-    }));
-  }, [updatedMarkerThemes]);
-
-  // Update the usedInPots flags for markerThemes whenever pots change.
-  useEffect(() => {
-    const { updatedMarkerThemes } = updateUsedStatuses(pots, markerThemes);
-    setMarkerThemes(updatedMarkerThemes);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  const updatedThemeOptions = useMemo(() => {
+    return updateUsedStatuses(pots, defaultThemes).updatedMarkerThemes;
   }, [pots]);
 
   const {
@@ -215,7 +196,7 @@ const PotsPage = () => {
             potNamesUsed={potNamesUsed.filter(
               (potName: string) => potName !== selectedPot?.name
             )}
-            themeOptions={themeOptions}
+            themeOptions={updatedThemeOptions}
           />
         )}
       </>
@@ -331,7 +312,7 @@ const PotsPage = () => {
             potName={selectedPot?.name}
             targetVal={selectedPot?.target}
             markerTheme={selectedPot?.theme}
-            themeOptions={themeOptions}
+            themeOptions={updatedThemeOptions}
           />
         )}
 

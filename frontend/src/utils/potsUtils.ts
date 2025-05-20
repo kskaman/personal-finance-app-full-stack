@@ -4,10 +4,11 @@ import { Pot } from "../types/models";
 export const updateUsedStatuses = (
   pots: Pot[],
   markerThemes: MarkerTheme[]
-): { updatedMarkerThemes: MarkerTheme[] } => {
+): { updatedMarkerThemes: { value: string;  label: string; colorCode: string;  used: boolean}[]} => {
   const updatedMarkerThemes = markerThemes.map((theme) => ({
     ...theme,
-    usedInPots: pots.some(
+    value: theme.colorCode,
+    used: pots.some(
       (pot) =>
         pot.theme.toLowerCase() === theme.colorCode.toLowerCase()
     ),

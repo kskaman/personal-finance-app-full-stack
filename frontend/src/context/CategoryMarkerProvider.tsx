@@ -1,5 +1,4 @@
 import { ReactNode, useState } from "react";
-import { MarkerTheme } from "../types/Data";
 import CategoryMarkerContext from "./CategoryMarkerContext";
 import { Category } from "../types/models";
 import { defaultThemes } from "../constants/markerThemes";
@@ -14,16 +13,13 @@ const CategoryMarkerProvider = ({
   children,
 }: CategoryMarkerProviderProps) => {
   const [categoriesArr, setCategoriesArr] = useState<Category[]>(categories);
-  const [markerThemesArr, setMarkerThemesArr] =
-    useState<MarkerTheme[]>(defaultThemes);
 
   return (
     <CategoryMarkerContext.Provider
       value={{
         categories: categoriesArr,
-        markerThemes: markerThemesArr,
+        markerThemes: defaultThemes,
         setCategories: setCategoriesArr,
-        setMarkerThemes: setMarkerThemesArr,
       }}
     >
       {children}

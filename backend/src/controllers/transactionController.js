@@ -102,19 +102,13 @@ export const getMonthlyTransactionsByCategoryNames = async (req, res) => {
           lt: end,
         },
         category: {
-          categoryDefinition: {
-            name: {
-              in: categoryNames,
-            },
+          name: {
+            in: categoryNames,
           },
         },
       },
       include: {
-        category: {
-          include: {
-            categoryDefinition: true,
-          },
-        },
+        category: true,
       },
       orderBy: {
         date: "desc",
@@ -128,7 +122,7 @@ export const getMonthlyTransactionsByCategoryNames = async (req, res) => {
     }, {});
 
     for (const txn of transactions) {
-      const name = txn.category?.categoryDefinition?.name;
+      const name = txn.category?.name;
       if (name && grouped[name]) {
         grouped[name].push(txn);
       }

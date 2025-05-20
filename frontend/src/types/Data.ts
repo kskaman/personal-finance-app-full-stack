@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 
-import { Balance, Budget, Category, Currency, Font, Settings, Transaction } from "./models";
+import { Balance, Category, Currency, Font, Settings, Transaction } from "./models";
 
 export interface BudgetStats {
   totalMaximum: number;
@@ -12,10 +12,8 @@ export interface BudgetStats {
 }
 
 export interface MarkerTheme {
-    name: string;
+    label: string;
     colorCode: string;
-    usedInBudgets: boolean;
-    usedInPots: boolean;
 }
 
 export interface RecurringSummary {
@@ -30,7 +28,6 @@ export interface DataType {
     balance: Balance;
     settings: Settings;
     transactions: Transaction[];
-    budgets: Budget[];
     categories: Category[];
   }
 
