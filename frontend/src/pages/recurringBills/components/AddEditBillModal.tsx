@@ -5,10 +5,10 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import ModalSelectDropdown from "../../../ui/ModalSelectDropdown";
 import Button from "../../../ui/Button";
-import { categories } from "../../../data/categories";
-import { dateOptions } from "../../../data/dates";
+import { dateOptions } from "../../../constants/dates";
 import ActionModal from "../../../ui/ActionModal";
 import ModalTextField from "../../../ui/ModalTextField";
+import { categories } from "../../../constants/categories";
 
 // Types & Interfaces
 export interface BillFormValues {
@@ -123,7 +123,10 @@ const AddEditBillModal = ({
               <ModalSelectDropdown
                 value={field.value}
                 onChange={field.onChange}
-                options={categories.map((cat) => ({ value: cat, label: cat }))}
+                options={categories.map((cat) => ({
+                  value: cat,
+                  label: cat,
+                }))}
                 label="Category"
                 error={error}
               />

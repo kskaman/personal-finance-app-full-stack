@@ -38,7 +38,7 @@ Error,
   
   return useMutation({
     mutationFn: createBudget,
-    onSuccess: useInvalidate,
+    onSuccess: useInvalidate(),
   });
 };
 
@@ -50,7 +50,7 @@ Error,
   
   return useMutation({
     mutationFn: updateBudget,
-    onSuccess: useInvalidate,
+    onSuccess: useInvalidate(),
   });
 };
 
@@ -58,7 +58,7 @@ export const useDeleteBudget = (): UseMutationResult<void, Error, string> => {
   
   return useMutation({
     mutationFn: deleteBudget,
-    onSuccess: useInvalidate,
+    onSuccess: useInvalidate(),
   });
 };
 

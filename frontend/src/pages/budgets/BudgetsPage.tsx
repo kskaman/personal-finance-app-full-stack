@@ -11,7 +11,7 @@ import SetTitle from "../../ui/SetTitle";
 import BudgetsPieChart from "./components/BudgetsPieChart";
 import PageDiv from "../../ui/PageDiv";
 import SubContainer from "../../ui/SubContainer";
-import { useContext, useMemo, useState, useEffect } from "react";
+import { useContext, useMemo, useState, useEffect, useCallback } from "react";
 
 import { formatNumber } from "../../utils/utilityFunctions";
 import { MarkerTheme } from "../../types/Data";
@@ -122,46 +122,46 @@ const BudgetsPage = () => {
   const [selectedBudget, setSelectedBudget] = useState<Budget | null>(null);
   const [mode, setMode] = useState<"edit" | "add" | null>(null);
 
-  const handleEditBudget = ({
-    maxSpend,
-    markerTheme,
-  }: {
-    maxSpend: string;
-    markerTheme: string;
-  }) => {
-    if (selectedBudget === null) return;
+  const handleEditBudget = useCallback(
+    ({ maxSpend, markerTheme }: { maxSpend: string; markerTheme: string }) => {
+      if (selectedBudget === null) return;
 
-    updateBudgetMutation.mutate({
-      id: selectedBudget.id,
-      maximum: parseFloat(maxSpend),
-      theme: markerTheme,
-    });
-    setSelectedBudget(null);
-  };
+      updateBudgetMutation.mutate({
+        id: selectedBudget.id,
+        maximum: parseFloat(maxSpend),
+        theme: markerTheme,
+      });
+      setSelectedBudget(null);
+    },
+    [selectedBudget, updateBudgetMutation]
+  );
 
-  const handleAddBudget = ({
-    category,
-    maxSpend,
-    markerTheme,
-  }: {
-    category: string;
-    maxSpend: string;
-    markerTheme: string;
-  }) => {
-    addBudgetMutation.mutate({
+  const handleAddBudget = useCallback(
+    ({
       category,
-      maximum: parseFloat(maxSpend),
-      theme: markerTheme,
-    });
-  };
+      maxSpend,
+      markerTheme,
+    }: {
+      category: string;
+      maxSpend: string;
+      markerTheme: string;
+    }) => {
+      addBudgetMutation.mutate({
+        category,
+        maximum: parseFloat(maxSpend),
+        theme: markerTheme,
+      });
+    },
+    [addBudgetMutation]
+  );
 
-  const handleBudgetDelete = () => {
+  const handleBudgetDelete = useCallback(() => {
     if (selectedBudget === null) {
       return;
     }
     deleteBudgetMutation.mutate(selectedBudget.id);
     setSelectedBudget(null);
-  };
+  }, [deleteBudgetMutation, selectedBudget]);
 
   if (isLoading || isStatsLoading || isTxnMapLoading) {
     return <DotLoader />;

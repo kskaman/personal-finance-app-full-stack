@@ -8,8 +8,6 @@ import {
   login,
   forgotPassword,
   resetPassword,
-  getCurrentUser,
-  deleteCurrentUser,
   resendVerification,
   verifyReset,
 } from "../controllers/authController.js";

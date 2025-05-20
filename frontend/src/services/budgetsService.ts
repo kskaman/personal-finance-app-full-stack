@@ -12,7 +12,7 @@ export const fetchTransactionsByBudget = async (budgetCategories: string[]):
   const now = new Date();
   const month = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
 
-  const res = await api.post("/budgetCategories", {
+  const res = await api.post("/transactions/budgetCategories", {
     categoryNames: budgetCategories,
     month,
   });
@@ -22,7 +22,7 @@ export const fetchTransactionsByBudget = async (budgetCategories: string[]):
 
 
 export const fetchBudgetStats = async (): Promise<BudgetStats> => {
-  const res = await api.get("/api/budgets/stats");
+  const res = await api.get("/budgets/stats");
   return res.data;
 }
 
@@ -43,7 +43,7 @@ export const updateBudget = async ({ id, maximum, theme}: {
     theme: string;
   
 } ) : Promise<Budget> => {
-  const res = await api.put(`/budgets/${id}`, {maximum, theme });
+  const res = await api.patch(`/budgets/${id}`, {maximum, theme });
   return res.data;
 };
 

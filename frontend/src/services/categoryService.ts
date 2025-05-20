@@ -15,8 +15,5 @@ export const createCategory = (name: string): Promise<Category> =>
 export const renameCategory = (id: string, name: string): Promise<Category> =>
   api.put(`${base}/${id}`, { name }).then(r => r.data);
 
-export const toggleUsedInBudgets = (id: string): Promise<Category> =>
-  api.patch(`${base}/${id}/flag`).then(r => r.data);
-
 export const deleteCategory = (id: string): Promise<void> =>
   api.delete(`${base}/${id}`).then(() => {});

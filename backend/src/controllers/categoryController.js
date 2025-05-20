@@ -5,46 +5,27 @@ import { CategoryType } from "@prisma/client";
 function flatten(row) {
   return {
     id: row.id,
-    name: row.categoryDefinition.name,
-    type: row.categoryDefinition.type,
-    usedInBudgets: row.usedInBudgets,
+    name: row.name,
+    type: row.type,
   };
 }
 
 /** GET /api/categories */
 export const getAllCategories = async (req, res) => {
   try {
-    const rows = await prisma.userCategory.findMany({
-      where: { userId: req.userId },
+    const rows = await prisma.categoryDefinition.findMany({
+      where: { OR: [{ creatorId: null }, { creatorId: req.userId }] },
       select: {
         id: true,
-        usedInBudgets: true,
-        categoryDefinition: { select: { name: true, type: true } },
+        name: true,
+        type: true,
       },
-      orderBy: { categoryDefinition: { name: "asc" } },
+      orderBy: { name: "asc" },
     });
 
-    res.json(rows.map(flatten));
+    res.status(200).json(rows.map(flatten));
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Server error" });
-  }
-};
-
-/** GET /api/categories/:id */
-export const getCategory = async (req, res) => {
-  try {
-    // findFirst lets us filter by both id & userId
-    const link = await prisma.userCategory.findFirst({
-      where: { id: req.params.id, userId: req.userId },
-      include: { categoryDefinition: { select: { name: true, type: true } } },
-    });
-    if (!link) {
-      return res.status(404).json({ message: "Category not found" });
-    }
-    res.json(flatten(link));
-  } catch (err) {
-    console.error("getCategory error:", err);
     res.status(500).json({ message: "Server error" });
   }
 };
@@ -64,16 +45,8 @@ export const createCategory = async (req, res) => {
     const def = await prisma.categoryDefinition.create({
       data: { name, type: CategoryType.custom, creatorId: req.userId },
     });
-    // Link to user
-    const link = await prisma.userCategory.create({
-      data: { userId: req.userId, categoryDefinitionId: def.id },
-      select: {
-        id: true,
-        usedInBudgets: true,
-        categoryDefinition: { select: { name: true, type: true } },
-      },
-    });
-    res.status(201).json(flatten(link));
+
+    res.status(201).json(flatten(def));
   } catch (err) {
     console.error(err);
     res
@@ -89,32 +62,23 @@ export const renameCategory = async (req, res) => {
     if (!name) {
       return res.status(400).json({ message: "Name is required" });
     }
-    const link = await prisma.userCategory.findFirst({
-      where: { id: req.params.id, userId: req.userId },
-      include: { categoryDefinition: true },
+    const link = await prisma.categoryDefinition.findFirst({
+      where: {
+        id: req.params.id,
+        creatorId: req.userId,
+        type: CategoryType.custom,
+      },
     });
     if (!link) {
       return res.status(404).json({ message: "Category not found" });
     }
-    if (link.categoryDefinition.type !== CategoryType.custom) {
-      return res
-        .status(403)
-        .json({ message: "Cannot rename standard category" });
-    }
+
     // Update definition
-    await prisma.categoryDefinition.update({
-      where: { id: link.categoryDefinitionId },
+    const updated = await prisma.categoryDefinition.update({
+      where: { id: link.id },
       data: { name },
     });
-    // Re-fetch updated link
-    const updated = await prisma.userCategory.findUnique({
-      where: { id: link.id },
-      select: {
-        id: true,
-        usedInBudgets: true,
-        categoryDefinition: { select: { name: true, type: true } },
-      },
-    });
+
     res.json(flatten(updated));
   } catch (err) {
     console.error(err);
@@ -124,51 +88,25 @@ export const renameCategory = async (req, res) => {
   }
 };
 
-/** PATCH /api/categories/:id/flag */
-export const toggleUsedInBudgets = async (req, res) => {
-  try {
-    const link = await prisma.userCategory.findFirst({
-      where: { id: req.params.id, userId: req.userId },
-    });
-    if (!link) {
-      return res.status(404).json({ message: "Category not found" });
-    }
-    const updated = await prisma.userCategory.update({
-      where: { id: link.id },
-      data: { usedInBudgets: !link.usedInBudgets },
-      select: {
-        id: true,
-        usedInBudgets: true,
-        categoryDefinition: { select: { name: true, type: true } },
-      },
-    });
-    res.json(flatten(updated));
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
-  }
-};
-
 /** DELETE /api/categories/:id */
 export const deleteCategory = async (req, res) => {
   try {
-    const link = await prisma.userCategory.findFirst({
-      where: { id: req.params.id, userId: req.userId },
-      include: { categoryDefinition: true },
+    const link = await prisma.categoryDefinition.findFirst({
+      where: {
+        id: req.params.id,
+        creatorId: req.userId,
+        type: CategoryType.custom,
+      },
     });
     if (!link) {
       return res.status(404).json({ message: "Category not found" });
     }
-    if (link.categoryDefinition.type !== CategoryType.custom) {
-      return res
-        .status(403)
-        .json({ message: "Cannot delete standard category" });
-    }
+
     // Reassign to "General"
-    const generalLink = await prisma.userCategory.findFirst({
+    const generalLink = await prisma.categoryDefinition.findFirst({
       where: {
-        userId: req.userId,
-        categoryDefinition: { name: "General" },
+        name: "General",
+        type: CategoryType.standard,
       },
     });
     if (!generalLink) {
@@ -177,29 +115,24 @@ export const deleteCategory = async (req, res) => {
 
     // Update transactions
     await prisma.transaction.updateMany({
-      where: { userId: req.userId, userCategoryId: link.id },
-      data: { userCategoryId: generalLink.id },
+      where: { userId: req.userId, categoryDefinitionId: link.id },
+      data: { categoryDefinitionId: generalLink.id },
     });
 
     // Delete budgets
     await prisma.budget.deleteMany({
-      where: { userCategoryId: link.id },
+      where: { categoryDefinitionId: link.id },
     });
 
     // Update recurring bills
     await prisma.recurringBill.updateMany({
-      where: { userId: req.userId, userCategoryId: link.id },
-      data: { userCategoryId: generalLink.id },
-    });
-
-    // Delete the user category
-    await prisma.userCategory.delete({
-      where: { id: link.id },
+      where: { userId: req.userId, categoryDefinitionId: link.id },
+      data: { categoryDefinitionId: generalLink.id },
     });
 
     // Delete the linked category definition
     await prisma.categoryDefinition.delete({
-      where: { id: link.categoryDefinitionId },
+      where: { id: link.id },
     });
 
     return res.status(204).json({ message: "Category unlinked successfully." });

@@ -1,14 +1,10 @@
-import prisma from "../prismaClient";
+import prisma from "../prismaClient.js";
 
 /* selection helper */
 const budgetsSelect = {
   id: true,
   category: {
-    select: {
-      categoryDefinition: {
-        select: { name: true },
-      },
-    },
+    select: { name: true },
   },
   maximum: true,
   theme: true,
@@ -23,16 +19,14 @@ export const getBudgets = async (req, res) => {
       where: { userId },
       orderBy: {
         category: {
-          categoryDefinition: {
-            name: "asc",
-          },
+          name: "asc",
         },
       },
       select: budgetsSelect,
     });
 
     const budgets = raw.map((b) => {
-      const categoryName = b.category?.categoryDefinition?.name;
+      const categoryName = b.category?.name;
 
       return {
         id: b.id,
@@ -59,39 +53,35 @@ export const addBudget = async (req, res) => {
   }
 
   try {
-    // fnd category definition
-    const userCat = await prisma.categoryDefinition.findFirst({
+    // Find the definition
+    const catDef = await prisma.categoryDefinition.findFirst({
       where: {
-        userId,
-        categoryDefinition: {
-          name: category,
-        },
+        name: category,
+        OR: [{ creatorId: null }, { creatorId: userId }],
       },
     });
+    if (!catDef) return res.status(404).json({ message: "Category not found" });
 
-    if (!userCat) {
-      return res.status(404).json({ message: "Category not found" });
-    }
+    // Create the budget
+    const budget = await prisma.budget.create({
+      data: {
+        userId,
+        categoryDefinitionId: catDef.id,
+        maximum: parseFloat(maximum),
+        theme,
+      },
+      select: budgetsSelect,
+    });
 
-    const [budget] = await prisma.$transaction([
-      prisma.budget.create({
-        data: {
-          userId,
-          userCategoryId: userCat.id,
-          maximum: parseFloat(maximum),
-          theme,
-        },
-      }),
-      prisma.userCategory.update({
-        where: { id: userCat.id },
-        data: { usedInBudgets: true },
-      }),
-    ]);
-
-    return res.status(201).json(budget);
+    return res.status(201).json({
+      id: budget.id,
+      theme: budget.theme,
+      maximum: budget.maximum,
+      category: catDef.name,
+    });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: "Server Error" });
+    res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -100,25 +90,28 @@ export const updateBudget = async (req, res) => {
   const budgetId = req.params.id;
 
   const { maximum, theme } = req.body;
-  const userId = req.userId;
 
   if (!theme?.trim() || isNaN(Number(maximum))) {
     return res.status(400).json({ message: "Invalid payload" });
   }
 
   try {
-    const budget = await prisma.budget.update({
-      where: { id: budgetId, userId },
-      data: {
-        maximum: parseFloat(maximum),
-        theme,
-      },
+    const budget = await prisma.budget.findFirst({
+      where: { id: budgetId, userId: req.userId },
     });
 
-    res.json(budget);
+    if (budget === null)
+      return res.status(404).json({ message: "Budget not found" });
+
+    const updatedBudget = await prisma.budget.update({
+      where: { id: budget.id },
+      data: { maximum: parseFloat(maximum), theme },
+    });
+
+    res.status(200).json(updatedBudget);
   } catch (err) {
     if (err.code === "P2025")
-      return res.status(404).json({ message: "Pot not found" });
+      return res.status(404).json({ message: "Budget not found" });
     console.error(err);
     res.status(500).json({ message: "Server error" });
   }
@@ -129,11 +122,16 @@ export const deleteBudget = async (req, res) => {
   const budgetId = req.params.id;
 
   try {
-    await prisma.budget.delete({ where: { id: budgetId } });
-    res.status(204).end();
+    const { count } = await prisma.budget.deleteMany({
+      where: { id: budgetId, userId: req.userId },
+    });
+    if (count === 0)
+      return res.status(404).json({ message: "Budget not found" });
+
+    return res.status(204).end();
   } catch (err) {
     if (err.message === "NOT_FOUND" || err.code === "P2025")
-      return res.status(404).json({ message: "Pot not found" });
+      return res.status(404).json({ message: "Budget not found" });
     console.error(err);
     res.status(500).json({ message: "Server error" });
   }
@@ -157,19 +155,13 @@ export const getBudgetStats = async (req, res) => {
       select: {
         maximum: true,
         category: {
-          select: {
-            categoryDefinition: {
-              select: { name: true },
-            },
-          },
+          select: { name: true },
         },
         theme: true,
       },
       orderBy: {
         category: {
-          categoryDefinition: {
-            name: "asc",
-          },
+          name: "asc",
         },
       },
       take: 4,
@@ -177,12 +169,12 @@ export const getBudgetStats = async (req, res) => {
 
     const topBudgets = topBudgetsRaw.map((b) => ({
       maximum: b.maximum,
-      category: b.category.categoryDefinition.name,
+      category: b.category.name,
       theme: b.theme,
     }));
 
-    res.status(201).json({
-      totalMaximum: aggregate._sum.maximum,
+    res.status(200).json({
+      totalMaximum: aggregate._sum.maximum ?? 0,
       topBudgets,
     });
   } catch (err) {

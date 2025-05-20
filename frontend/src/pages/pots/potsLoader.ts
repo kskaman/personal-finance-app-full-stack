@@ -1,8 +1,8 @@
-import { QueryClient } from "@tanstack/react-query";
 import { fetchPots } from "../../services/potsService";
+import queryClient from "../../queryClient";
 
-export const potsLoader = (qc: QueryClient) => async () => {
-    await qc.ensureQueryData({
+export const potsLoader = () => async () => {
+    await queryClient.ensureQueryData({
         queryKey: ["pots"],
         queryFn: fetchPots
     });

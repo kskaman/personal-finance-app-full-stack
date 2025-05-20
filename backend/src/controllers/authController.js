@@ -9,7 +9,6 @@ import crypto from "crypto";
 import redis from "../redisClient.js";
 import { sendEmail } from "../utils/sendEmail.js";
 
-import { CategoryType } from "@prisma/client";
 /**
  * Signup: create user + nested settings & balance + email verification token
  */
@@ -22,16 +21,6 @@ export const signup = async (req, res) => {
       return res.status(400).json({
         message: "Email already registered.",
       });
-    }
-
-    // Fetch your standard categories first
-    const standardDefs = await prisma.categoryDefinition.findMany({
-      where: { type: CategoryType.standard },
-      select: { id: true },
-    });
-
-    if (!standardDefs.length) {
-      console.warn("No standard category definitions found.");
     }
 
     // Run everything in one transaction
@@ -59,17 +48,6 @@ export const signup = async (req, res) => {
         },
       });
 
-      // Link each standard category to this new user
-      if (standardDefs.length) {
-        await tx.userCategory.createMany({
-          data: standardDefs.map((def) => ({
-            userId: created.id,
-            categoryDefinitionId: def.id,
-          })),
-          skipDuplicates: true,
-        });
-      }
-
       // Return the freshly created user so it becomes `newUser`
       return created;
     });
@@ -96,7 +74,7 @@ export const signup = async (req, res) => {
  * Verify Email: activate account if token is valid & unexpired
  */
 export const verifyEmail = async (req, res) => {
-  const { token } = req.query.t;
+  const token = req.query.t;
   try {
     // 1. Find user by token and check expiry
     const user = await prisma.user.findFirst({
@@ -340,9 +318,6 @@ export const deleteCurrentUser = async (req, res) => {
       prisma.transaction.deleteMany({ where: { userId } }),
       prisma.budget.deleteMany({ where: { userId } }),
       prisma.recurringBill.deleteMany({ where: { userId } }),
-
-      // Remove per‑user category links
-      prisma.userCategory.deleteMany({ where: { userId } }),
 
       // Delete any custom CategoryDefinitions this user created
       prisma.categoryDefinition.deleteMany({ where: { creatorId: userId } }),

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { categories } from "../data/categories";
+
 import {
   SelectChangeEvent,
   Stack,
@@ -14,6 +14,7 @@ import FilterIcon from "../Icons/FilterIcon";
 import { XL_BREAK, MD_BREAK } from "../constants/widthConstants";
 import CustomDropdown from "./CustomDropdown";
 import SearchInput from "./SearchInput";
+import { categories } from "../constants/categories";
 
 interface FilterProps {
   parentWidth: number;

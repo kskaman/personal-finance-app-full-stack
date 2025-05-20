@@ -5,11 +5,7 @@ const billSelect = {
   id: true,
   name: true,
   category: {
-    select: {
-      categoryDefinition: {
-        select: { name: true },
-      },
-    },
+    select: { name: true },
   },
   amount: true,
   dueDate: true,
@@ -30,7 +26,7 @@ export const getBills = async (req, res) => {
     });
 
     const bills = raw.map((b) => {
-      const categoryName = b.category?.categoryDefinition?.name;
+      const categoryName = b.category?.name;
 
       return {
         id: b.id,
@@ -59,7 +55,7 @@ export const getBill = async (req, res) => {
     });
     if (!raw) return res.status(404).json({ message: "Not found" });
 
-    const categoryName = raw.category?.categoryDefinition?.name;
+    const categoryName = raw.category?.name;
 
     return res.json({
       id: raw.id,
@@ -83,7 +79,7 @@ export const addBill = async (req, res) => {
     const userId = req.userId;
 
     // find the category definition
-    const categoryDef = await prisma.categoryDefinition.findUnique({
+    const categoryDef = await prisma.categoryDefinition.findFirst({
       where: {
         name: category,
         OR: [
@@ -97,32 +93,13 @@ export const addBill = async (req, res) => {
       return res.status(400).json({ message: "Unknown category" });
     }
 
-    // find or create the per-user category link
-    let userCat = await prisma.userCategory.findUnique({
-      where: {
-        userId_categoryDefinitionId: {
-          userId,
-          categoryDefinitionId: categoryDef.id,
-        },
-      },
-    });
-
-    if (!userCat) {
-      userCat = await prisma.userCategory.create({
-        data: {
-          userId,
-          categoryDefinitionId: categoryDef.id,
-        },
-      });
-    }
-
     const bill = await prisma.recurringBill.create({
       data: {
         name,
         amount,
         dueDate,
         theme,
-        userCategoryId: userCat.id,
+        categoryDefinitionId: categoryDef.id,
         userId: req.userId,
         lastPaid: null,
       },
@@ -174,22 +151,8 @@ export const editBill = async (req, res) => {
         return res.status(400).json({ message: "Unknown category" });
       }
 
-      // Find user link
-      let userCat = await prisma.userCategory.findUnique({
-        where: {
-          userId_categoryDefinitionId: {
-            userId,
-            categoryDefinitionId: categoryDef.id,
-          },
-        },
-      });
-
-      if (!userCat) {
-        return res.status(400).json({ message: "Unknown category" });
-      }
-
       // Assign to the bill
-      data.userCategoryId = userCat.id;
+      data.categoryDefinitionId = categoryDef.id;
     }
 
     // Update the bill
@@ -204,11 +167,7 @@ export const editBill = async (req, res) => {
         lastPaid: true,
         theme: true,
         category: {
-          select: {
-            categoryDefinition: {
-              select: { name: true },
-            },
-          },
+          select: { name: true },
         },
       },
     });
@@ -221,7 +180,7 @@ export const editBill = async (req, res) => {
       dueDate: updated.dueDate,
       lastPaid: updated.lastPaid,
       theme: updated.theme,
-      category: updated.category?.categoryDefinition?.name ?? null,
+      category: updated.category?.name ?? null,
     });
   } catch (error) {
     console.error("Error updating bill:", error);

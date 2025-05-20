@@ -15,9 +15,10 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import ModalSelectDropdown from "../../../ui/ModalSelectDropdown";
 import Button from "../../../ui/Button";
-import { categories } from "../../../data/categories";
+
 import ActionModal from "../../../ui/ActionModal";
 import ModalTextField from "../../../ui/ModalTextField";
+import { categories } from "../../../constants/categories.ts";
 
 // Interfaces and Props
 interface FormValues {
