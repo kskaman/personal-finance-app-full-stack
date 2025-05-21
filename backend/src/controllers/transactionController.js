@@ -1,16 +1,26 @@
 import prisma from "../prismaClient.js";
-import { CategoryType } from "@prisma/client";
 import { v4 as uuid } from "uuid";
+
+const txSelect = {
+  id: true,
+  name: true,
+  amount: true,
+  date: true,
+  theme: true,
+  recurring: true,
+  recurringId: true,
+  category: { select: { name: true } },
+};
 
 /** helper: shape record for the front-end */
 const flatten = (row) => ({
   id: row.id,
   name: row.name,
-  category: row.category.categoryDefinition.name,
+  category: row.category.name,
   date: row.date,
   amount: row.amount,
-  recurring: row.recurring,
-  recurringId: row.recurringId,
+  recurring: row.recurring || false,
+  recurringId: row.recurringId || null,
   theme: row.theme,
 });
 
@@ -20,44 +30,78 @@ const flatten = (row) => ({
 export const getTransactions = async (req, res) => {
   const {
     page = 1,
-    pageSize = 10,
-    month,
-    q,
-    catId,
+    month = "All",
+    searchName,
+    category = "All Transactions",
     sort = "latest",
   } = req.query;
-  const skip = (+page - 1) * +pageSize;
-  const order =
-    sort === "latest"
-      ? [{ date: "desc" }]
-      : sort === "oldest"
-      ? [{ date: "asc" }]
-      : sort === "highest"
-      ? [{ amount: "desc" }]
-      : sort === "lowest"
-      ? [{ amount: "asc" }]
-      : [{ date: "desc" }];
 
-  const where = { userId: req.userId };
-  if (month && month !== "all") {
-    const [m, y] = month.split("-"); // 2025-05 (zero-pad month)
-    where.date = { gte: new Date(y, m - 1, 1), lt: new Date(y, m, 1) };
+  try {
+    const pageNumber = Number(page) || 1;
+    const skip = (pageNumber - 1) * 10;
+
+    const order =
+      sort === "latest"
+        ? [{ date: "desc" }]
+        : sort === "oldest"
+        ? [{ date: "asc" }]
+        : sort === "highest"
+        ? [{ amount: "desc" }]
+        : sort === "lowest"
+        ? [{ amount: "asc" }]
+        : [{ date: "desc" }];
+
+    const where = { userId: req.userId };
+
+    if (month && month.toLowerCase() !== "all") {
+      const [monthName, yearStr] = month.split(" ");
+      // dummy year to get index
+      const monthIndex = new Date(`${monthName} 1, 2000`).getMonth();
+      const year = Number(yearStr);
+
+      where.date = {
+        gte: new Date(year, monthIndex, 1),
+        lt: new Date(year, monthIndex + 1, 1),
+      };
+    }
+
+    if (searchName) where.name = { contains: searchName, mode: "insensitive" };
+
+    if (category && category !== "All Transactions") {
+      const catDef = await prisma.categoryDefinition.findFirst({
+        where: {
+          name: category,
+          OR: [{ creatorId: null }, { creatorId: req.userId }],
+        },
+        select: { id: true },
+      });
+
+      if (!catDef) {
+        return res.status(404).json({ message: `Category not found.` });
+      }
+
+      where.categoryDefinitionId = catDef.id;
+    }
+
+    const [rows, count] = await prisma.$transaction([
+      prisma.transaction.findMany({
+        where,
+        orderBy: order,
+        skip,
+        take: 10,
+        select: txSelect,
+      }),
+      prisma.transaction.count({ where }),
+    ]);
+
+    res.json({
+      data: rows.map(flatten),
+      total: count,
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Server error" });
   }
-  if (q) where.name = { contains: q, mode: "insensitive" };
-  if (catId) where.userCategoryId = catId;
-
-  const [rows, count] = await prisma.$transaction([
-    prisma.transaction.findMany({
-      where,
-      orderBy: order,
-      skip,
-      take: +pageSize,
-      include: { category: { include: { categoryDefinition: true } } },
-    }),
-    prisma.transaction.count({ where }),
-  ]);
-
-  res.json({ data: rows.map(flatten), total: count });
 };
 
 /**
@@ -141,210 +185,268 @@ export const getMonthlyTransactionsByCategoryNames = async (req, res) => {
 export const createTransaction = async (req, res) => {
   const {
     name,
-    userCategoryId,
+    category,
     date,
     amount,
     recurring = false,
-    recurringId,
+    recurringId = null,
     dueDate,
+    theme,
   } = req.body;
+  const userId = req.userId;
 
-  // verify category belongs to this user
-  const link = await prisma.userCategory.findUnique({
-    where: { id: userCategoryId },
-    select: { id: true, userId: true },
-  });
-  if (!link || link.userId !== req.userId)
-    return res.status(400).json({ msg: "Bad category" });
+  if (
+    !name?.trim() ||
+    !category?.trim() ||
+    isNaN(Number(amount)) ||
+    !date?.trim() ||
+    !theme?.trim()
+  )
+    return res.status(400).json({ message: "Invalid payload" });
 
-  let billId = recurringId;
+  try {
+    const catDef = await prisma.categoryDefinition.findFirst({
+      where: {
+        name: category,
+        OR: [{ creatorId: null }, { creatorId: userId }],
+      },
+      select: { id: true },
+    });
 
-  const result = await prisma.$transaction(async (tx) => {
-    // create / update recurring bill if needed
-    if (recurring) {
-      if (!billId || billId === "new") {
+    if (!catDef) {
+      return res.status(404).json({ message: " Category not found. " });
+    }
+
+    const updated = await prisma.$transaction(async (tx) => {
+      let billId = recurringId;
+
+      if (recurring && (!billId || billId === "new")) {
         const bill = await tx.recurringBill.create({
           data: {
-            id: uuid(),
-            userId: req.userId,
+            userId,
             name,
-            category: link, // category string no longer stored; keep theme separately
-            userCategoryId: link.id,
+            categoryDefinitionId: catDef.id,
             amount: -Math.abs(amount),
             dueDate,
-            lastPaid: date,
-            theme: req.body.theme || "#8884d8",
-            recurring: true,
+            lastPaid: new Date(date),
+            theme: theme,
           },
         });
         billId = bill.id;
-      } else {
+      }
+
+      const row = await tx.transaction.create({
+        data: {
+          name,
+          categoryDefinitionId: catDef.id,
+          date: new Date(date),
+          amount,
+          recurring,
+          recurringId: recurring ? billId : null,
+        },
+        select: txSelect,
+      });
+
+      await tx.balance.update({
+        where: { userId },
+        data: {
+          current: { increment: amount },
+          income: amount > 0 ? { increment: amount } : undefined,
+          expenses: amount < 0 ? { increment: amount } : undefined,
+        },
+      });
+
+      // Always update the lastPaid of the related recurring bill (new or old)
+      const targetRecurringId = billId;
+
+      if (targetRecurringId) {
+        const latest = await tx.transaction.findFirst({
+          where: { recurringId: targetRecurringId, userId },
+          orderBy: { date: "desc" },
+          select: { date: true },
+        });
+
         await tx.recurringBill.update({
-          where: { id: billId, userId: req.userId },
-          data: { lastPaid: date },
+          where: { id: targetRecurringId, userId },
+          data: { lastPaid: latest?.date ?? null },
         });
       }
-    }
 
-    // insert transaction
-    const txn = await tx.transaction.create({
-      data: {
-        id: uuid(),
-        userId: req.userId,
-        userCategoryId: link.id,
-        name,
-        date,
-        amount: recurring ? -Math.abs(amount) : amount,
-        recurring,
-        recurringId: billId,
-        theme: req.body.theme || "#8884d8",
-      },
-      include: { category: { include: { categoryDefinition: true } } },
+      return row;
     });
 
-    // update balance atomically
-    await tx.balance.update({
-      where: { userId: req.userId },
-      data: {
-        current: { increment: txn.amount },
-        income: txn.amount > 0 ? { increment: txn.amount } : undefined,
-        expenses:
-          txn.amount < 0 ? { increment: Math.abs(txn.amount) } : undefined,
-      },
-    });
-
-    return txn;
-  });
-
-  res.status(201).json(flatten(result));
+    res.status(201).json(flatten(updated));
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Server error" });
+  }
 };
 
 /**
  * Update a transaction - PUT '/api/transactions/:id'
  */
 export const updateTransaction = async (req, res) => {
-  const { id } = req.params;
-  const {
-    name,
-    userCategoryId,
-    date,
-    amount,
-    recurring,
-    recurringId,
-    dueDate,
-  } = req.body;
+  const txId = req.params.id;
+  const { name, category, date, amount, recurring, recurringId, dueDate } =
+    req.body;
+  const userId = req.userId;
 
-  const original = await prisma.transaction.findUnique({ where: { id } });
-  if (!original || original.userId !== req.userId) return res.sendStatus(404);
+  if (!name?.trim() || !category?.trim() || isNaN(Number(amount)) || !date)
+    return res.status(400).json({ message: "Invalid payload" });
 
-  const link = await prisma.userCategory.findUnique({
-    where: { id: userCategoryId },
-    select: { id: true, userId: true },
-  });
-  if (!link || link.userId !== req.userId)
-    return res.status(400).json({ msg: "Bad category" });
+  try {
+    const original = await prisma.transaction.findFirst({
+      where: { id: txId, userId: userId },
+    });
 
-  const diff = amount - original.amount; // +/- for balance adjustment
+    if (!original) {
+      return res.status(404).json({ message: "Transaction not found." });
+    }
 
-  const updated = await prisma.$transaction(async (tx) => {
-    // recurring bill housekeeping similar to create…
-    let billId = recurringId;
-    if (recurring) {
-      if (!billId || billId === "new") {
+    const catDef = await prisma.categoryDefinition.findFirst({
+      where: {
+        name: category,
+        OR: [{ creatorId: null }, { creatorId: userId }],
+      },
+      select: { id: true },
+    });
+
+    if (!catDef) {
+      return res.status(404).json({ message: " Category not found. " });
+    }
+
+    const updated = await prisma.$transaction(async (tx) => {
+      let billId = recurringId;
+
+      if (recurring && (!billId || billId === "new")) {
         const bill = await tx.recurringBill.create({
           data: {
-            id: uuid(),
-            userId: req.userId,
+            userId,
             name,
-            userCategoryId: link.id,
+            categoryDefinitionId: catDef.id,
             amount: -Math.abs(amount),
             dueDate,
-            lastPaid: date,
+            lastPaid: new Date(date),
             theme: original.theme,
           },
         });
         billId = bill.id;
-      } else {
+      }
+
+      const row = await tx.transaction.update({
+        where: { id: txId },
+        data: {
+          name,
+          categoryDefinitionId: catDef.id,
+          date: new Date(date),
+          amount,
+          recurring,
+          recurringId: recurring ? billId : null,
+        },
+        select: txSelect,
+      });
+
+      const diff = amount - original.amount; // +/- for balance adjustment
+
+      await tx.balance.update({
+        where: { userId },
+        data: {
+          current: { increment: diff },
+          income:
+            diff > 0
+              ? { increment: diff }
+              : original.amount > 0
+              ? { decrement: -diff }
+              : undefined,
+          expenses:
+            diff < 0
+              ? { increment: Math.abs(diff) }
+              : original.amount < 0
+              ? { increment: diff }
+              : undefined,
+        },
+      });
+
+      // Always update the lastPaid of the related recurring bill (new or old)
+      const targetRecurringId = billId;
+
+      if (targetRecurringId) {
+        const latest = await tx.transaction.findFirst({
+          where: { recurringId: targetRecurringId, userId },
+          orderBy: { date: "desc" },
+          select: { date: true },
+        });
+
         await tx.recurringBill.update({
-          where: { id: billId, userId: req.userId },
-          data: { lastPaid: date },
+          where: { id: targetRecurringId, userId },
+          data: { lastPaid: latest?.date ?? null },
         });
       }
-    }
 
-    const row = await tx.transaction.update({
-      where: { id },
-      data: {
-        name,
-        userCategoryId: link.id,
-        date,
-        amount,
-        recurring,
-        recurringId: billId,
-      },
-      include: { category: { include: { categoryDefinition: true } } },
+      return row;
     });
 
-    await tx.balance.update({
-      where: { userId: req.userId },
-      data: {
-        current: { increment: diff },
-        income:
-          diff > 0
-            ? { increment: diff }
-            : diff < 0 && original.amount > 0
-            ? { decrement: Math.abs(diff) }
-            : undefined,
-        expenses:
-          diff < 0
-            ? { increment: Math.abs(diff) }
-            : diff > 0 && original.amount < 0
-            ? { decrement: diff }
-            : undefined,
-      },
-    });
-
-    return row;
-  });
-
-  res.json(flatten(updated));
+    res.status(200).json(flatten(updated));
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Server error" });
+  }
 };
 
 /**
  * Delete a transaction - DELETE '/api/transactions/:id'
  */
 export const deleteTransaction = async (req, res) => {
-  const { id } = req.params;
+  const txId = req.params.id;
+  const userId = req.userId;
 
-  const txn = await prisma.transaction.findUnique({ where: { id } });
-  if (!txn || txn.userId !== req.userId) return res.sendStatus(404);
-
-  await prisma.$transaction(async (tx) => {
-    await tx.transaction.delete({ where: { id } });
-
-    // balance reverse
-    await tx.balance.update({
-      where: { userId: req.userId },
-      data: {
-        current: { decrement: txn.amount },
-        income: txn.amount > 0 ? { decrement: txn.amount } : undefined,
-        expenses:
-          txn.amount < 0 ? { decrement: Math.abs(txn.amount) } : undefined,
+  try {
+    const txn = await prisma.transaction.findFirst({
+      where: { id: txId, userId },
+      select: {
+        id: true,
+        amount: true,
+        recurring: true,
+        recurringId: true,
+        date: true,
       },
     });
 
-    // recurring-bill lastPaid update (look for newest remaining txn)
-    if (txn.recurring && txn.recurringId) {
-      const latest = await tx.transaction.findFirst({
-        where: { recurringId: txn.recurringId },
-        orderBy: { date: "desc" },
-      });
-      await tx.recurringBill.update({
-        where: { id: txn.recurringId, userId: req.userId },
-        data: { lastPaid: latest?.date ?? null },
-      });
+    if (!txn) {
+      return res.status(404).json({ message: "Transaction not found." });
     }
-  });
 
-  res.sendStatus(204);
+    await prisma.$transaction(async (tx) => {
+      await tx.transaction.delete({ where: { id: txId } });
+
+      const isIncome = txn.amount > 0;
+
+      // balance reverse
+      await tx.balance.update({
+        where: { userId: userId },
+        data: {
+          current: { decrement: txn.amount },
+          income: isIncome ? { decrement: txn.amount } : undefined,
+          expenses: !isIncome ? { decrement: Math.abs(txn.amount) } : undefined,
+        },
+      });
+
+      // recurring-bill lastPaid update (look for newest remaining txn)
+      if (txn.recurring && txn.recurringId) {
+        const latest = await tx.transaction.findFirst({
+          where: { recurringId: txn.recurringId },
+          orderBy: { date: "desc" },
+        });
+        await tx.recurringBill.update({
+          where: { id: txn.recurringId, userId: req.userId },
+          data: { lastPaid: latest?.date ?? null },
+        });
+      }
+    });
+
+    res.sendStatus(204);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Server error" });
+  }
 };
