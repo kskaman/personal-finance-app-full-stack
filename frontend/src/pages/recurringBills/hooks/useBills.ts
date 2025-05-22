@@ -11,13 +11,14 @@ import {
     updateBill,
     deleteBill
 } from "../../../services/billsService";
+import { RecurringBill } from "../../../types/models";
 
 
 /* ---------- LIST / STATS ---------- */
 export const useBills = () =>
-    useQuery({
+    useQuery<RecurringBill[]>({
         queryKey: ["bills"],
-        queryFn: () => fetchBills(),
+        queryFn: fetchBills,
 });
   
 export const useBillStats = () =>

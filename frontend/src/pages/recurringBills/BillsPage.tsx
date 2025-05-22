@@ -268,7 +268,6 @@ const BillsPage = () => {
                     }}
                     setEditModalOpen={(bill: RecurringBill) => {
                       setSelectedBill(bill);
-                      console.log(selectedBill);
                       openEditModal();
                     }}
                   />

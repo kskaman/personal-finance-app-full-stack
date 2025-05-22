@@ -11,6 +11,7 @@ import { SettingsContext } from "../pages/settings/context/SettingsContext";
 import { billsLoader } from "../pages/recurringBills/billsLoader";
 import { potsLoader } from "../pages/pots/potsLoader";
 import { budgetsLoader } from "../pages/budgets/budgetsLoader";
+import { transactionsLoader } from "../pages/transactions/transactionsLoader";
 
 const MainRoutes = () => {
   const { displayedModules } = useContext(SettingsContext);
@@ -36,7 +37,11 @@ const MainRoutes = () => {
         {displayedModules.bills && (
           <Route path="bills" element={<BillsPage />} loader={billsLoader} />
         )}
-        <Route path="transactions" element={<TransactionsPage />} />
+        <Route
+          path="transactions"
+          element={<TransactionsPage />}
+          loader={transactionsLoader}
+        />
         <Route path="settings" element={<SettingsPage />} />
       </Route>
     </Routes>

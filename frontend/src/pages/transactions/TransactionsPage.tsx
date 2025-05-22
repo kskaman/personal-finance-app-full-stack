@@ -1,15 +1,11 @@
 import { Box, Stack, Typography, useTheme } from "@mui/material";
-import { v4 as uuidv4 } from "uuid";
 import SetTitle from "../../ui/SetTitle";
 import PageDiv from "../../ui/PageDiv";
 import SubContainer from "../../ui/SubContainer";
 import TransactionsTable from "./components/TransactionsTable";
 import PageNav from "./components/PageNav";
-import { useContext, useMemo, useState } from "react";
-import {
-  BalanceTransactionsActionContext,
-  BalanceTransactionsDataContext,
-} from "../../context/BalanceTransactionsContext";
+import { useCallback, useContext, useMemo, useState } from "react";
+import { useSearchParams } from "react-router";
 import useParentWidth from "../../customHooks/useParentWidth";
 import Button from "../../ui/Button";
 import useModal from "../../customHooks/useModal";
@@ -17,19 +13,25 @@ import DeleteModal from "../../ui/DeleteModal";
 
 import AddEditTransactionModal from "./components/AddEditTransactionModal";
 import {
-  convertDateToISOString,
+  convertDateObjectToString,
+  convertDateToDateObject,
   formatDecimalNumber,
-  formatISODateToDDMMYYYY,
   getRandomColor,
 } from "../../utils/utilityFunctions";
 import EmptyStatePage from "../../ui/EmptyStatePage";
 import Filter from "../../ui/Filter";
 import { RecurringBill, Transaction } from "../../types/models";
-import {
-  RecurringActionContext,
-  RecurringDataContext,
-} from "../recurringBills/context/RecurringContext";
+
 import { SettingsContext } from "../settings/context/SettingsContext";
+import {
+  useAddTx,
+  useEditTx,
+  useRemoveTx,
+  useTransactions,
+  useTxnStats,
+} from "./hooks/useTransactions";
+import { useBills } from "../recurringBills/hooks/useBills";
+import DotLoader from "../../ui/DotLoader";
 
 // Interfaces and Props
 interface FormValues {
@@ -43,141 +45,89 @@ interface FormValues {
   dueDate?: string;
 }
 
-// Helper function: generate month options from earliest transaction date until current month
-const getMonthYearOptions = (transactions: Transaction[]): string[] => {
-  if (transactions.length === 0) return [];
-  // Find the earliest transaction date
-  const dates = transactions.map((txn) => new Date(txn.date));
-  const earliest = new Date(Math.min(...dates.map((d) => d.getTime())));
-  const current = new Date();
-  const options = [];
-  const iterDate = new Date(earliest.getFullYear(), earliest.getMonth(), 1);
-  while (
-    iterDate.getFullYear() < current.getFullYear() ||
-    (iterDate.getFullYear() === current.getFullYear() &&
-      iterDate.getMonth() <= current.getMonth())
-  ) {
-    options.push(
-      iterDate.toLocaleString("default", { month: "long", year: "numeric" })
-    );
-    iterDate.setMonth(iterDate.getMonth() + 1);
-  }
-  return options.reverse();
+type SearchParams = {
+  page: string;
+  searchName: string;
+  sortBy: "Latest" | "Oldest" | "A to Z" | "Z to A" | "Highest" | "Lowest";
+  category: string;
+  selectedMonth: string;
 };
 
-// Helper function : filter transaction as per search, sort by , category and month
-const filterAndSortTransactions = (
-  transactions: Transaction[],
-  searchName: string,
-  category: string,
-  sortBy: string,
-  selectedMonth: string
-): Transaction[] => {
-  const filteredTx = transactions.filter((txn) => {
-    const matchesSearch = searchName
-      ? txn.name.toLowerCase().includes(searchName.toLowerCase().trim())
-      : true;
-    const matchesCategory =
-      category === "All Transactions" || txn.category === category;
-    let matchesMonth = true;
-    if (selectedMonth && selectedMonth !== "All") {
-      const txnDate = new Date(txn.date);
-      const txnMonthYear = txnDate.toLocaleString("default", {
-        month: "long",
-        year: "numeric",
-      });
-      matchesMonth = txnMonthYear === selectedMonth;
-    }
-    return matchesSearch && matchesCategory && matchesMonth;
-  });
-
-  // Sorting Logic
-  return filteredTx.sort((a, b) => {
-    const dateA = new Date(a.date).getTime();
-    const dateB = new Date(b.date).getTime();
-
-    switch (sortBy) {
-      case "Latest": {
-        // Primary sort: descending by date (so b - a)
-        const dateDiff = dateB - dateA;
-        if (dateDiff !== 0) {
-          return dateDiff;
-        }
-        // If dates tie, fallback to name A–Z
-        return a.name.localeCompare(b.name);
-      }
-
-      case "Oldest": {
-        // Primary sort: ascending by date (so a - b)
-        const dateDiff = dateA - dateB;
-        if (dateDiff !== 0) {
-          return dateDiff;
-        }
-        // If dates tie, fallback to name A–Z
-        return a.name.localeCompare(b.name);
-      }
-
-      case "A to Z":
-        return a.name.localeCompare(b.name);
-
-      case "Z to A":
-        return b.name.localeCompare(a.name);
-
-      case "Highest":
-        return a.amount - b.amount;
-
-      case "Lowest":
-        return b.amount - a.amount;
-
-      default:
-        return 0;
-    }
-  });
-};
+const PER_PAGE = 10;
 
 // Main Page component
 const TransactionsPage = () => {
   const theme = useTheme();
   const { containerRef, parentWidth } = useParentWidth();
 
-  const [pageNum, setPageNum] = useState<number>(() => 1);
-
-  const { transactions, balance } = useContext(BalanceTransactionsDataContext);
-  const { setTransactions, setBalance } = useContext(
-    BalanceTransactionsActionContext
-  );
-
-  const recurringBills = useContext(RecurringDataContext).recurringBills;
-  const { setRecurringBills } = useContext(RecurringActionContext);
   const currencySymbol = useContext(SettingsContext).selectedCurrency;
 
-  const [searchName, setSearchName] = useState<string>("");
-  const [sortBy, setSortBy] = useState<string>("Latest");
-  const [category, setCategory] = useState<string>("All Transactions");
+  const [params, setParams] = useSearchParams({
+    page: "1",
+    searchName: "",
+    sortBy: "Latest",
+    category: "All Transactions",
+    month: "All",
+  });
 
-  const [selectedMonth, setSelectedMonth] = useState<string>("All");
+  const qp = {
+    page: Number(params.get("page")!),
+    searchName: params.get("searchName")!,
+    sortBy: params.get("sortBy")! as SearchParams["sortBy"],
+    category: params.get("category")!,
+    month: params.get("month")!,
+  } as const;
 
-  const filteredTx: Transaction[] = filterAndSortTransactions(
-    transactions,
-    searchName,
-    category,
-    sortBy,
-    selectedMonth
+  const setFilter = useCallback(
+    (k: keyof typeof qp, v: string) =>
+      setParams((prev) => ({ ...Object.fromEntries(prev), [k]: v, page: "1" })),
+    [setParams]
   );
 
-  const numPages = Math.ceil(filteredTx.length / 10);
+  const {
+    data: txnData = { transactions: [], total: 0 },
+    isLoading,
+    isError,
+    refetch: txnRefetch,
+  } = useTransactions({ params: qp });
+  const { transactions, total } = txnData;
 
-  const numbers = Array.from({ length: numPages }, (_, i) => i + 1);
+  const {
+    data: recurringBills,
+    isLoading: isBillLoading,
+    isError: isBillError,
+    refetch: billRefetch,
+  } = useBills();
 
-  const handlePageChange = (newPageNum: number) => {
-    if (newPageNum >= 1 && newPageNum <= numbers[numbers.length - 1]) {
-      setPageNum(newPageNum);
-    }
+  const {
+    data: txStats = { total: 0, monthOptions: [] },
+    isLoading: isStatsLoading,
+    isError: isStatsError,
+    refetch: statsRefetch,
+  } = useTxnStats();
+
+  const addTxMutation = useAddTx();
+  const editTxMutation = useEditTx();
+  const removeTxMutation = useRemoveTx();
+
+  const recurringOptions = useMemo(() => {
+    if (!recurringBills) return [];
+
+    return recurringBills.map((bill: RecurringBill) => ({
+      value: `${bill.id}`,
+      label: `${bill.name} - ${currencySymbol}${Math.abs(bill.amount)}`,
+      dueDate: bill.dueDate,
+      category: bill.category,
+      name: bill.name,
+      amount: formatDecimalNumber(Math.abs(bill.amount)),
+    }));
+  }, [recurringBills, currencySymbol]);
+
+  const pageCount = Math.ceil(total / PER_PAGE);
+  const setPage = (p: number) => {
+    if (p < 1 || p > pageCount) return;
+    setParams((prev) => ({ ...Object.fromEntries(prev), page: String(p) }));
   };
-
-  const i = pageNum * 10;
-  const selectedTnxs = filteredTx.slice(i - 10, i);
-
   // Modal management hooks
   const {
     isOpen: isDeleteModalOpen,
@@ -197,267 +147,101 @@ const TransactionsPage = () => {
     closeModal: closeAddModal,
   } = useModal();
 
-  const recurringOptions = recurringBills.map((bill: RecurringBill) => {
-    return {
-      value: `${bill.id}`,
-      label: `${bill.name} - ${currencySymbol}${Math.abs(bill.amount)}`,
-      dueDate: bill.dueDate,
-      category: bill.category,
-      name: bill.name,
-      amount: formatDecimalNumber(Math.abs(bill.amount)),
-    };
-  });
-
   const [selectedTnx, setSelectedTnx] = useState<Transaction | null>(null);
 
   // Handle transaction delete functionality
-  const handleDeleteTnx = () => {
+  const handleDeleteTnx = useCallback(() => {
     if (selectedTnx === null) return;
 
-    // Remove the deleted transaction from the list.
-    const newTnxs = transactions.filter(
-      (tnx: Transaction) => tnx.id !== selectedTnx.id
-    );
-
-    const amount = selectedTnx.amount;
-    const isNegative = amount < 0;
-    setBalance({
-      ...balance,
-      current: isNegative ? balance.current + amount : balance.current - amount,
-      income: isNegative ? balance.income : balance.income - amount,
-      expenses: isNegative ? balance.expenses + amount : balance.expenses,
-    });
-
-    setTransactions(newTnxs);
-
-    // If the deleted transaction was recurring, update the recurring bill.
-    if (selectedTnx.recurring && selectedTnx.recurringId) {
-      // Use the updated transactions list for related transactions.
-      const relatedTxns = newTnxs.filter(
-        (txn) => txn.recurring && txn.recurringId === selectedTnx.recurringId
-      );
-
-      let updatedRecurringBills;
-      if (relatedTxns.length === 0) {
-        // If no related transactions remain, clear the lastPaid date.
-        updatedRecurringBills = recurringBills.map((bill) => {
-          if (bill.id === selectedTnx.recurringId) {
-            return { ...bill, lastPaid: "" };
-          }
-          return bill;
-        });
-      } else {
-        // Find the transaction with the latest date.
-        const latestTxn = relatedTxns.reduce((prev, current) =>
-          new Date(current.date) > new Date(prev.date) ? current : prev
-        );
-        updatedRecurringBills = recurringBills.map((bill) => {
-          if (bill.id === selectedTnx.recurringId) {
-            return { ...bill, lastPaid: latestTxn.date };
-          }
-          return bill;
-        });
-      }
-      setRecurringBills(updatedRecurringBills);
-    }
-  };
+    removeTxMutation.mutate(selectedTnx.id);
+    setSelectedTnx(null);
+  }, [removeTxMutation, selectedTnx]);
 
   // Function to add a transaction.
-  const handleAddTransaction = (formData: FormValues) => {
-    let transaction: Transaction;
-    let billTheme = getRandomColor();
-    const isoDate = convertDateToISOString(formData.date);
+  const handleAddTransaction = useCallback(
+    (formData: FormValues) => {
+      const amt = parseFloat(formData.amount);
 
-    if (formData.paymentType === "oneTime") {
-      transaction = {
-        id: uuidv4(),
+      addTxMutation.mutate({
         name: formData.txnName,
         category: formData.category,
-        date: isoDate,
+        date: convertDateToDateObject(formData.date),
         amount:
-          formData.paymentDirection === "paid"
-            ? -parseFloat(formData.amount)
-            : parseFloat(formData.amount),
-        recurring: false,
-        theme: billTheme,
-      };
-    } else {
-      // Recurring transaction logic (similar to what you already have)
-      let recurringId = formData.recurringId;
-      if (!recurringId || recurringId === "new") {
-        const newBill: RecurringBill = {
-          id: uuidv4(),
-          name: formData.txnName,
-          category: formData.category,
-          amount: -parseFloat(formData.amount),
-          recurring: true,
-          lastPaid: isoDate,
-          dueDate: formData.dueDate!,
-          theme: billTheme,
-        };
-        setRecurringBills((prevBills: RecurringBill[]) => [
-          ...prevBills,
-          newBill,
-        ]);
-        recurringId = newBill.id;
-        billTheme = newBill.theme;
-      } else if (recurringId) {
-        const updatedBills: RecurringBill[] = recurringBills.map((bill) => {
-          if (bill.id === recurringId) {
-            billTheme = bill.theme;
-            return { ...bill, lastPaid: isoDate };
-          }
-          return bill;
-        });
-        setRecurringBills([...updatedBills]);
-      }
-      transaction = {
-        id: uuidv4(),
-        name: formData.txnName,
-        category: formData.category,
-        date: isoDate,
-        amount: -parseFloat(formData.amount), // force negative for recurring
-        recurring: true,
-        recurringId,
-        theme: billTheme,
-      };
-    }
-
-    // Update transactions state
-    setTransactions((prevTxns: Transaction[]) => [transaction, ...prevTxns]);
-
-    // Update balance state based on transaction amount
-    if (transaction.amount < 0) {
-      // "Paid" transaction: subtract from current balance and add to expenses
-      setBalance({
-        ...balance,
-        current: balance.current + transaction.amount, // transaction.amount is negative
-        expenses: balance.expenses + Math.abs(transaction.amount),
+          formData.paymentType === "recurring"
+            ? -Math.abs(amt)
+            : formData.paymentDirection === "paid"
+            ? -Math.abs(amt)
+            : Math.abs(amt),
+        recurring: formData.paymentType === "recurring" ? true : false,
+        recurringId:
+          formData.paymentType === "recurring"
+            ? formData.recurringId ?? undefined
+            : undefined,
+        dueDate:
+          formData.paymentType === "recurring"
+            ? formData.dueDate ?? undefined
+            : undefined,
+        theme: getRandomColor(),
       });
-    } else {
-      // "Received" transaction: add to current balance and income
-      setBalance({
-        ...balance,
-        current: balance.current + transaction.amount,
-        income: balance.income + transaction.amount,
-      });
-    }
-  };
-
-  // Function to edit a transaction.
-  const handleEditTransaction = (formData: FormValues) => {
-    if (!selectedTnx) return; // safety check
-
-    const isoDate = convertDateToISOString(formData.date);
-    // Determine new amount based on the updated form data
-    const newAmount =
-      formData.paymentType === "oneTime"
-        ? formData.paymentDirection === "paid"
-          ? -parseFloat(formData.amount)
-          : parseFloat(formData.amount)
-        : -parseFloat(formData.amount); // recurring is forced negative
-
-    // Calculate the difference from the original amount
-    const diff = newAmount - selectedTnx.amount;
-
-    // Update the transactions list
-    setTransactions((prevTxns: Transaction[]) =>
-      prevTxns.map((txn) => {
-        if (txn.id !== selectedTnx.id) return txn;
-        if (formData.paymentType === "oneTime") {
-          return {
-            ...txn,
-            name: formData.txnName,
-            category: formData.category,
-            date: isoDate,
-            amount: newAmount,
-            recurring: false,
-            recurringId: undefined,
-            theme: txn.theme || getRandomColor(),
-          };
-        } else {
-          let recurringId = formData.recurringId;
-          let billTheme = getRandomColor();
-
-          if (selectedTnx.recurring) {
-            // If already recurring, update only the date.
-            return {
-              ...txn,
-              date: isoDate,
-            };
-          } else {
-            // Switching from one-time to recurring:
-            if (!recurringId || recurringId === "new") {
-              const newBill: RecurringBill = {
-                id: uuidv4(),
-                name: formData.txnName,
-                category: formData.category,
-                amount: -parseFloat(formData.amount),
-                recurring: true,
-                lastPaid: isoDate,
-                dueDate: formData.dueDate!,
-                theme: getRandomColor(),
-              };
-              setRecurringBills((prevBills: RecurringBill[]) => [
-                ...prevBills,
-                newBill,
-              ]);
-              recurringId = newBill.id;
-              billTheme = newBill.theme;
-            } else if (recurringId) {
-              const updatedBills: RecurringBill[] = recurringBills.map(
-                (bill) => {
-                  if (bill.id === recurringId) {
-                    billTheme = bill.theme;
-                    return { ...bill, lastPaid: isoDate };
-                  }
-                  return bill;
-                }
-              );
-              setRecurringBills([...updatedBills]);
-            }
-            return {
-              ...txn,
-              name: formData.txnName,
-              category: formData.category,
-              date: isoDate,
-              amount: newAmount,
-              recurring: true,
-              recurringId,
-              theme: billTheme,
-            };
-          }
-        }
-      })
-    );
-
-    // Update balance state using the difference between new and old amounts
-    if (diff < 0) {
-      // More money paid than before, subtract the difference
-      setBalance({
-        ...balance,
-        current: balance.current + diff, // diff is negative
-        expenses: balance.expenses + Math.abs(diff),
-      });
-    } else {
-      // More money received than before, add the difference
-      setBalance({
-        ...balance,
-        current: balance.current + diff,
-        income: balance.income + diff,
-      });
-    }
-  };
-
-  const monthOptions = useMemo(
-    () => getMonthYearOptions(transactions),
-    [transactions]
+    },
+    [addTxMutation]
   );
 
-  {
-    /* Empty Page for no transactions */
+  // Function to edit a transaction.
+  const handleEditTransaction = useCallback(
+    (formData: FormValues) => {
+      const amt = parseFloat(formData.amount);
+      if (!selectedTnx) return; // safety check
+      editTxMutation.mutate({
+        id: selectedTnx.id,
+        payload: {
+          name: formData.txnName,
+          category: formData.category,
+          date: convertDateToDateObject(formData.date),
+          amount:
+            formData.paymentType === "recurring"
+              ? -Math.abs(amt)
+              : formData.paymentDirection === "paid"
+              ? -Math.abs(amt)
+              : Math.abs(amt),
+          recurring: formData.paymentType === "recurring",
+          recurringId:
+            formData.paymentType === "recurring"
+              ? formData.recurringId ?? undefined
+              : undefined,
+          dueDate:
+            formData.paymentType === "recurring"
+              ? formData.dueDate ?? undefined
+              : undefined,
+          theme: selectedTnx.theme,
+        },
+      });
+      setSelectedTnx(null);
+    },
+    [editTxMutation, selectedTnx]
+  );
+
+  if (isLoading || isBillLoading || isStatsLoading) {
+    return <DotLoader />;
   }
-  if (filteredTx.length === 0) {
+
+  if (isError || isBillError || isStatsError) {
+    return (
+      <EmptyStatePage
+        message="Unable to fetch bills"
+        subText="Check your connection and retry."
+        buttonLabel="Retry"
+        onButtonClick={() => {
+          txnRefetch();
+          billRefetch();
+          statsRefetch();
+        }}
+      />
+    );
+  }
+
+  /* Empty Page for no transactions */
+  if (txStats.total === 0) {
     return (
       <>
         <EmptyStatePage
@@ -514,19 +298,18 @@ const TransactionsPage = () => {
             <SubContainer>
               <Filter
                 parentWidth={parentWidth}
-                searchName={searchName}
-                setSearchName={setSearchName}
-                category={category}
-                setCategory={setCategory}
-                sortBy={sortBy}
-                setSortBy={setSortBy}
-                selectedMonth={selectedMonth}
-                setSelectedMonth={setSelectedMonth}
-                monthOptions={monthOptions}
+                searchName={qp.searchName}
+                setSearchName={(v: string) => setFilter("searchName", v)}
+                category={qp.category}
+                setCategory={(v: string) => setFilter("category", v)}
+                sortBy={qp.sortBy}
+                setSortBy={(v: string) => setFilter("sortBy", v)}
+                selectedMonth={qp.month}
+                setSelectedMonth={(v: string) => setFilter("month", v)}
+                monthOptions={txStats.monthOptions}
               />
-
               <TransactionsTable
-                txns={selectedTnxs}
+                txns={transactions}
                 parentWidth={parentWidth}
                 setDeleteModalOpen={(txn: Transaction) => {
                   setSelectedTnx(txn);
@@ -539,9 +322,9 @@ const TransactionsPage = () => {
               />
 
               <PageNav
-                numbers={numbers}
-                selectedPage={pageNum}
-                handlePageSelect={handlePageChange}
+                numbers={Array.from({ length: pageCount }, (_, i) => i + 1)}
+                selectedPage={qp.page}
+                handlePageSelect={setPage}
                 parentWidth={parentWidth}
               />
             </SubContainer>
@@ -588,7 +371,7 @@ const TransactionsPage = () => {
             txnData={{
               txnName: selectedTnx.name,
               category: selectedTnx.category,
-              date: formatISODateToDDMMYYYY(selectedTnx.date),
+              date: convertDateObjectToString(selectedTnx.date),
               amount: formatDecimalNumber(
                 Math.abs(selectedTnx.amount)
               ).toString(),

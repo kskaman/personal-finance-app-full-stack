@@ -1,4 +1,4 @@
-import { useContext, useState } from "react";
+import { useCallback, useContext, useState } from "react";
 
 import {
   SelectChangeEvent,
@@ -19,17 +19,13 @@ import CategoryMarkerContext from "../context/CategoryMarkerContext";
 interface FilterProps {
   parentWidth: number;
   searchName: string;
-  setSearchName:
-    | React.Dispatch<React.SetStateAction<string>>
-    | ((value: string) => void);
+  setSearchName: (value: string) => void;
   category?: string;
-  setCategory?: React.Dispatch<React.SetStateAction<string>>;
+  setCategory?: (value: string) => void;
   sortBy: string;
-  setSortBy:
-    | React.Dispatch<React.SetStateAction<string>>
-    | ((value: string) => void);
+  setSortBy: (value: string) => void;
   selectedMonth?: string;
-  setSelectedMonth?: React.Dispatch<React.SetStateAction<string>>;
+  setSelectedMonth?: (value: string) => void;
   monthOptions?: string[];
 }
 
@@ -113,6 +109,15 @@ const Filter = ({
 
   // Prepend "All" to month options if provided
   const monthDropdownOptions = monthOptions ? ["All", ...monthOptions] : [];
+
+  const handleClear = useCallback(() => {
+    setSearchName("");
+    setSortBy("Latest");
+
+    /* extra filters may be undefined on e.g. sort-only tables */
+    if (setCategory) setCategory("All Transactions");
+    if (setSelectedMonth) setSelectedMonth("All");
+  }, [setCategory, setSearchName, setSelectedMonth, setSortBy]);
 
   // Render extra filters (for tables with category and month)
   const renderExtraFilters = () => {
@@ -281,31 +286,9 @@ const Filter = ({
     if (parentWidth > 1350) {
       // Show search input and filters inline
       return (
-        <Stack
-          direction="row"
-          alignItems="center"
-          justifyContent="space-between"
-        >
-          <SearchInput
-            placeholder="Search Transaction"
-            value={searchName}
-            width={{ xs: "100%", sm: "375px" }}
-            Icon={SearchIcon}
-            onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
-              setSearchName(event.target.value)
-            }
-          />
-          {renderExtraFilters()}
-        </Stack>
-      );
-    } else {
-      // Use toggle button to show/hide filters as in your current layout
-      return (
-        <Stack direction="column">
+        <Stack spacing={3}>
           <Stack
             direction="row"
-            height="45px"
-            gap="24px"
             alignItems="center"
             justifyContent="space-between"
           >
@@ -318,21 +301,104 @@ const Filter = ({
                 setSearchName(event.target.value)
               }
             />
-            <IconButton onClick={() => setIsFilterOpen(!isFilterOpen)}>
-              <FilterIcon color={theme.palette.primary.main} />
-            </IconButton>
+            {renderExtraFilters()}
           </Stack>
-          {isFilterOpen && (
-            <Stack direction="column" gap="16px" marginTop="24px" width="100%">
-              {renderExtraFilters()}
+          <Typography
+            sx={{
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: "pointer",
+              alignSelf: "flex-start",
+              color: theme.palette.primary.light,
+              "&:hover": {
+                color: theme.palette.primary.main,
+                textDecoration: "underline",
+              },
+            }}
+            onClick={handleClear}
+          >
+            Clear filters
+          </Typography>
+        </Stack>
+      );
+    } else {
+      // Use toggle button to show/hide filters as in your current layout
+      return (
+        <Stack spacing={3}>
+          <Stack direction="column">
+            <Stack
+              direction="row"
+              height="45px"
+              gap="24px"
+              alignItems="center"
+              justifyContent="space-between"
+            >
+              <SearchInput
+                placeholder="Search Transaction"
+                value={searchName}
+                width={{ xs: "100%", sm: "375px" }}
+                Icon={SearchIcon}
+                onChange={(event: React.ChangeEvent<HTMLInputElement>) =>
+                  setSearchName(event.target.value)
+                }
+              />
+              <IconButton onClick={() => setIsFilterOpen(!isFilterOpen)}>
+                <FilterIcon color={theme.palette.primary.main} />
+              </IconButton>
             </Stack>
-          )}
+            {isFilterOpen && (
+              <Stack
+                direction="column"
+                gap="16px"
+                marginTop="24px"
+                width="100%"
+              >
+                {renderExtraFilters()}
+              </Stack>
+            )}
+          </Stack>
+          <Typography
+            sx={{
+              fontSize: 14,
+              fontWeight: 600,
+              cursor: "pointer",
+              alignSelf: "flex-start",
+              color: theme.palette.primary.light,
+              "&:hover": {
+                color: theme.palette.primary.main,
+                textDecoration: "underline",
+              },
+            }}
+            onClick={handleClear}
+          >
+            Clear filters
+          </Typography>
         </Stack>
       );
     }
   } else {
     // This is the sort-only table
-    return renderSortOnly();
+    return (
+      <Stack spacing={3}>
+        {renderSortOnly()}
+        <Typography
+          sx={{
+            fontSize: 14,
+            fontWeight: 600,
+            cursor: "pointer",
+            alignSelf: "flex-start",
+            color: theme.palette.primary.light,
+            "&:hover": {
+              color: theme.palette.primary.main,
+              textDecoration: "underline",
+            },
+          }}
+          onClick={handleClear}
+        >
+          Clear filters
+        </Typography>
+      </Stack>
+    );
   }
 };
 

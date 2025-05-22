@@ -28,7 +28,7 @@ const getBillStatus = (lastPaid: Date | undefined, dueDate: string) => {
 
   const now = new Date();
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-  const lastPaidDate = lastPaid ? lastPaid : null;
+  const lastPaidDate = lastPaid ? new Date(lastPaid) : null;
   const dueDateObj =
     dueDate && !isNaN(Number(dueDate))
       ? new Date(now.getFullYear(), now.getMonth(), Number(dueDate))
@@ -44,6 +44,7 @@ const getBillStatus = (lastPaid: Date | undefined, dueDate: string) => {
     if (isDueSoon) status = "dueSoon";
     if (isDue) status = "due";
   }
+
   return status;
 };
 

@@ -1,7 +1,7 @@
 import { api } from "../api/api";
 import { RecurringBill } from "../types/models";
 
-export const fetchBills = () =>
+export const fetchBills = ()  : Promise<RecurringBill[]> =>
   api.get("/bills").then((res) => res.data);
 
 export const fetchBillStats = () =>

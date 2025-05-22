@@ -40,6 +40,18 @@ export const convertDateToISOString = (dateStr: string): string => {
   return dateObj.toISOString();
 };
 
+export const convertDateToDateObject = (dateStr: string): Date => {
+  const [day, month, year] = dateStr.split("/").map(Number);
+  return new Date(year, month - 1, day);
+};
+
+export const convertDateObjectToString = (d: Date): string => {
+  const date = new Date(d);
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+  return `${day}/${month}/${year}`;
+};
 
 export const formatDateToReadable = (dateString: string) => {
   const date = dateString.split("T")[0].split("-");
