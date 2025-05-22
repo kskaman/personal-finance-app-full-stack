@@ -31,25 +31,23 @@ export const getTransactions = async (req, res) => {
   const {
     page = 1,
     month = "All",
-    searchName,
+    searchName = "",
     category = "All Transactions",
-    sort = "latest",
+    sortBy = "latest",
   } = req.query;
 
   try {
     const pageNumber = Number(page) || 1;
     const skip = (pageNumber - 1) * 10;
 
-    const order =
-      sort === "latest"
-        ? [{ date: "desc" }]
-        : sort === "oldest"
-        ? [{ date: "asc" }]
-        : sort === "highest"
-        ? [{ amount: "desc" }]
-        : sort === "lowest"
-        ? [{ amount: "asc" }]
-        : [{ date: "desc" }];
+    const order = {
+      latest: [{ date: "desc" }],
+      oldest: [{ date: "asc" }],
+      highest: [{ amount: "desc" }],
+      lowest: [{ amount: "asc" }],
+      "a to z": [{ name: "asc" }],
+      "z to a": [{ name: "desc" }],
+    }[sortBy] ?? [{ date: "desc" }];
 
     const where = { userId: req.userId };
 
@@ -94,10 +92,30 @@ export const getTransactions = async (req, res) => {
       prisma.transaction.count({ where }),
     ]);
 
-    res.json({
-      data: rows.map(flatten),
+    return res.json({
+      transactions: rows.map(flatten),
       total: count,
+      page: Number(page),
     });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+/**
+ * Get latest 5 transactions - GET '/api/transactions/latest'
+ */
+export const getLatestTransactions = async (req, res) => {
+  try {
+    const transactions = await prisma.transaction.findMany({
+      where: { userId: req.userId },
+      orderBy: { date: "desc" },
+      take: 5,
+      select: txSelect,
+    });
+
+    res.json(transactions.map(flatten));
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: "Server error" });
@@ -110,7 +128,7 @@ export const getTransactions = async (req, res) => {
 export const getTransaction = async (req, res) => {
   const row = await prisma.transaction.findUnique({
     where: { id: req.params.id },
-    include: { category: { include: { categoryDefinition: true } } },
+    select: txSelect,
   });
 
   if (!row || row.userId !== req.userId) {
@@ -190,7 +208,7 @@ export const createTransaction = async (req, res) => {
     amount,
     recurring = false,
     recurringId = null,
-    dueDate,
+    dueDate = null,
     theme,
   } = req.body;
   const userId = req.userId;
@@ -237,12 +255,14 @@ export const createTransaction = async (req, res) => {
 
       const row = await tx.transaction.create({
         data: {
+          userId,
           name,
           categoryDefinitionId: catDef.id,
           date: new Date(date),
           amount,
           recurring,
           recurringId: recurring ? billId : null,
+          theme: theme,
         },
         select: txSelect,
       });
@@ -252,7 +272,7 @@ export const createTransaction = async (req, res) => {
         data: {
           current: { increment: amount },
           income: amount > 0 ? { increment: amount } : undefined,
-          expenses: amount < 0 ? { increment: amount } : undefined,
+          expenses: amount < 0 ? { increment: Math.abs(amount) } : undefined,
         },
       });
 
@@ -287,8 +307,15 @@ export const createTransaction = async (req, res) => {
  */
 export const updateTransaction = async (req, res) => {
   const txId = req.params.id;
-  const { name, category, date, amount, recurring, recurringId, dueDate } =
-    req.body;
+  const {
+    name,
+    category,
+    date,
+    amount,
+    recurring = false,
+    recurringId = null,
+    dueDate = null,
+  } = req.body;
   const userId = req.userId;
 
   if (!name?.trim() || !category?.trim() || isNaN(Number(amount)) || !date)
@@ -362,7 +389,7 @@ export const updateTransaction = async (req, res) => {
             diff < 0
               ? { increment: Math.abs(diff) }
               : original.amount < 0
-              ? { increment: diff }
+              ? { decrement: diff }
               : undefined,
         },
       });
@@ -370,7 +397,8 @@ export const updateTransaction = async (req, res) => {
       // Always update the lastPaid of the related recurring bill (new or old)
       const targetRecurringId = billId;
 
-      if (targetRecurringId) {
+      // Handle lastPaid update or deletion
+      if (recurring) {
         const latest = await tx.transaction.findFirst({
           where: { recurringId: targetRecurringId, userId },
           orderBy: { date: "desc" },
@@ -381,6 +409,17 @@ export const updateTransaction = async (req, res) => {
           where: { id: targetRecurringId, userId },
           data: { lastPaid: latest?.date ?? null },
         });
+      } else if (original.recurring && original.recurringId) {
+        // Check if any other transactions still use the old recurring bill
+        const count = await tx.transaction.count({
+          where: { recurringId: original.recurringId },
+        });
+
+        if (count === 0) {
+          await tx.recurringBill.delete({
+            where: { id: original.recurringId, userId },
+          });
+        }
       }
 
       return row;
@@ -445,6 +484,51 @@ export const deleteTransaction = async (req, res) => {
     });
 
     res.sendStatus(204);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
+
+/**
+ * Stats - send a total and months
+ */
+export const getTransactionMeta = async (req, res) => {
+  const userId = req.userId;
+
+  try {
+    const transactions = await prisma.transaction.findMany({
+      where: { userId },
+      select: { date: true },
+    });
+
+    const total = transactions.length;
+
+    if (total === 0) {
+      return res.status(201).json({ total, monthOptions: [] });
+    }
+
+    // Extract and sort month options
+    const dates = transactions.map((txn) => new Date(txn.date));
+    const earliest = new Date(Math.min(...dates.map((d) => d.getTime())));
+    const current = new Date();
+    const iterDate = new Date(earliest.getFullYear(), earliest.getMonth(), 1);
+
+    const monthOptions = [];
+    while (
+      iterDate.getFullYear() < current.getFullYear() ||
+      (iterDate.getFullYear() === current.getFullYear() &&
+        iterDate.getMonth() <= current.getMonth())
+    ) {
+      monthOptions.push(
+        iterDate.toLocaleString("default", { month: "long", year: "numeric" })
+      );
+      iterDate.setMonth(iterDate.getMonth() + 1);
+    }
+
+    monthOptions.reverse();
+
+    return res.json({ total, monthOptions });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: "Server error" });

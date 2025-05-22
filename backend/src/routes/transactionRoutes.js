@@ -3,7 +3,9 @@ import express from "express";
 import { authenticate } from "../middleware/authMiddleware.js";
 import {
   getTransactions,
+  getLatestTransactions,
   getTransaction,
+  getTransactionMeta,
   createTransaction,
   updateTransaction,
   deleteTransaction,
@@ -13,9 +15,12 @@ import {
 const router = express.Router();
 router.use(authenticate);
 
-router.get("/", getTransactions); // ?page=1&pageSize=10&month=May 2025&catId=···&q=search
-router.get("/:id", getTransaction);
+router.get("/meta", getTransactionMeta);
 router.post("/budgetCategories", getMonthlyTransactionsByCategoryNames);
+router.get("/latest", getLatestTransactions);
+
+router.get("/", getTransactions);
+router.get("/:id", getTransaction);
 router.post("/", createTransaction);
 router.put("/:id", updateTransaction);
 router.delete("/:id", deleteTransaction);
