@@ -476,10 +476,19 @@ export const deleteTransaction = async (req, res) => {
           where: { recurringId: txn.recurringId },
           orderBy: { date: "desc" },
         });
-        await tx.recurringBill.update({
-          where: { id: txn.recurringId, userId: req.userId },
-          data: { lastPaid: latest?.date ?? null },
-        });
+        if (latest) {
+          await tx.recurringBill.update({
+            where: { id: txn.recurringId, userId: userId },
+            data: { lastPaid: latest?.date ?? null },
+          });
+        } else {
+          await tx.recurringBill.delete({
+            where: {
+              id: txn.recurringId,
+              userId: userId,
+            },
+          });
+        }
       }
     });
 
