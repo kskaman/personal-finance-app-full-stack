@@ -10,11 +10,15 @@ import {
     updatePot,
     deletePot,
     potTransaction,
+    fetchPotStats,
 } from "../../../services/potsService";
   
 export const usePots = () =>
     useQuery({ queryKey: ["pots"], queryFn: fetchPots });
-  
+
+export const usePotStats = () =>
+  useQuery({ queryKey: ["pots", "stats"], queryFn: fetchPotStats });
+
 const useInvalidate = () => {
     const qc = useQueryClient();
     return () => qc.invalidateQueries({ queryKey: ["pots"] });

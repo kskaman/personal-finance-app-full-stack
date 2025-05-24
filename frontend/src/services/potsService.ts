@@ -5,6 +5,18 @@ export const fetchPots = async () => {
     return data;
 }
 
+export const fetchPotStats = async (): Promise<{
+    totalSaved: number,
+    topPots: {
+        name: string;
+        total: number;
+        theme: string
+    }[]
+}> => {
+    const { data } = await api.get("/pots/stats");
+    return data;
+}
+
 export const createPot = async (payload: {
     name: string;
     target: number;

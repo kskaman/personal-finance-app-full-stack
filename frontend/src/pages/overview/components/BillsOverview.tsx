@@ -4,25 +4,46 @@ import SubContainer from "../../../ui/SubContainer";
 import { useContext } from "react";
 import { formatNumber } from "../../../utils/utilityFunctions";
 import { Link } from "react-router";
-import { RecurringDataContext } from "../../recurringBills/context/RecurringContext";
 import { SettingsContext } from "../../settings/context/SettingsContext";
+import { useBillStats } from "../../recurringBills/hooks/useBills";
+import DotLoader from "../../../ui/DotLoader";
 
 const BillsOverview = () => {
   const theme = useTheme();
-  const { recurringSummary } = useContext(RecurringDataContext);
+  const { data: recurringSummary, isLoading, isError } = useBillStats();
+
+  const currencySymbol = useContext(SettingsContext).selectedCurrency;
+
+  if (isLoading) return <DotLoader />;
+  if (isError) return null;
 
   const summaryData = {
-    paid: { label: "Paid Bills", borderColor: theme.palette.others.green },
+    paid: {
+      label: "Paid Bills",
+      borderColor: theme.palette.others.green,
+      count: recurringSummary.paid.count,
+      total: recurringSummary.paid.total,
+    },
     unpaid: {
       label: "Total Upcoming",
       borderColor: theme.palette.others.yellow,
+      count: recurringSummary.unpaid.count,
+      total: recurringSummary.unpaid.total,
     },
-    dueSoon: { label: "Due Soon", borderColor: theme.palette.others.cyan },
-    due: { label: "Due", borderColor: theme.palette.others.red },
+    dueSoon: {
+      label: "Due Soon",
+      borderColor: theme.palette.others.cyan,
+      count: recurringSummary.dueSoon.count,
+      total: recurringSummary.dueSoon.total,
+    },
+    due: {
+      label: "Due",
+      borderColor: theme.palette.others.red,
+      count: recurringSummary.due.count,
+      total: recurringSummary.due.total,
+    },
   };
   const showDue = recurringSummary.due.count !== 0;
-
-  const currencySymbol = useContext(SettingsContext).selectedCurrency;
 
   return (
     <SubContainer>
@@ -61,12 +82,10 @@ const BillsOverview = () => {
         </Link>
       </Stack>
       <Stack gap="12px">
-        {Object.entries(recurringSummary)
+        {Object.entries(summaryData)
           .filter(([key]) => key !== "due" || showDue)
           .map(([key, summary]) => {
-            const typedKey = key as keyof typeof summaryData;
-
-            const isDue = typedKey === "due";
+            const isDue = key === "due";
 
             return (
               <Stack
@@ -76,7 +95,7 @@ const BillsOverview = () => {
                 justifyContent="space-between"
                 padding="20px 16px"
                 borderRadius="8px"
-                borderLeft={`4px solid ${summaryData[typedKey].borderColor}`}
+                borderLeft={`4px solid ${summary.borderColor}`}
                 bgcolor={theme.palette.background.default}
               >
                 <Typography
@@ -88,7 +107,7 @@ const BillsOverview = () => {
                       : theme.palette.primary.light
                   }
                 >
-                  {summaryData[typedKey].label}
+                  {summary.label}
                 </Typography>
                 <Typography
                   fontSize="14px"
@@ -99,7 +118,8 @@ const BillsOverview = () => {
                       : theme.palette.primary.main
                   }
                 >
-                  {`${currencySymbol}${formatNumber(summary.total)}`}
+                  ${summary.count}(
+                  {`${currencySymbol}${formatNumber(summary.total)}`})
                 </Typography>
               </Stack>
             );

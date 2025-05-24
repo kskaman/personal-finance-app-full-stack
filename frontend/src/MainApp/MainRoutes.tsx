@@ -12,6 +12,7 @@ import { billsLoader } from "../pages/recurringBills/billsLoader";
 import { potsLoader } from "../pages/pots/potsLoader";
 import { budgetsLoader } from "../pages/budgets/budgetsLoader";
 import { transactionsLoader } from "../pages/transactions/transactionsLoader";
+import { overviewLoader } from "../pages/overview/overviewLoader";
 
 const MainRoutes = () => {
   const { displayedModules } = useContext(SettingsContext);
@@ -20,7 +21,11 @@ const MainRoutes = () => {
     <Routes>
       <Route path="" element={<MainLayout />}>
         <Route index element={<Navigate to="overview" />} />
-        <Route path="overview" element={<OverViewPage />} />
+        <Route
+          path="overview"
+          element={<OverViewPage />}
+          loader={overviewLoader}
+        />
         {/* Only allow access to BudgetsPage if the module is enabled */}
         {displayedModules.budgets && (
           <Route

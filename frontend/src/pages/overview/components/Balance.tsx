@@ -1,12 +1,15 @@
 import { Typography, Stack, useTheme } from "@mui/material";
 import { formatNumber } from "../../../utils/utilityFunctions";
 import { useContext } from "react";
-import { BalanceTransactionsDataContext } from "../../../context/BalanceTransactionsContext";
 import { SettingsContext } from "../../settings/context/SettingsContext";
+import { useBalance } from "../hooks/useBalance";
 
 const Balance = ({ isParentSm }: { isParentSm: boolean }) => {
   const theme = useTheme();
-  const balance = useContext(BalanceTransactionsDataContext).balance;
+
+  const { data: balance = { current: 0, income: 0, expenses: 0 } } =
+    useBalance();
+
   const currencySymbol = useContext(SettingsContext).selectedCurrency;
 
   return (

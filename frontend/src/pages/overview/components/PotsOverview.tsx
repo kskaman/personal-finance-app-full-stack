@@ -8,22 +8,31 @@ import SubContainer from "../../../ui/SubContainer";
 import useParentWidth from "../../../customHooks/useParentWidth";
 import { SM_BREAK } from "../../../constants/widthConstants";
 import { Link } from "react-router";
-import { PotsDataContext } from "../../pots/context/PotsContext";
 import { SettingsContext } from "../../settings/context/SettingsContext";
+import { usePotStats } from "../../pots/hooks/usePots";
+import DotLoader from "../../../ui/DotLoader";
 
 const PotsOverview = () => {
   const theme = useTheme();
-  const pots = useContext(PotsDataContext).pots;
-
-  const totalSaved = pots.reduce((sum, pot) => sum + pot.total, 0);
-
-  const fourPots = pots.slice(0, 4);
 
   const { containerRef, parentWidth } = useParentWidth();
 
   const isParentWidth = parentWidth < SM_BREAK;
 
   const currencySymbol = useContext(SettingsContext).selectedCurrency;
+
+  const {
+    data: potStats = {
+      totalSaved: 0,
+      topPots: [],
+    },
+    isLoading,
+    isError,
+  } = usePotStats();
+
+  if (isLoading) return <DotLoader />;
+
+  if (isError) return null;
 
   return (
     <Box ref={containerRef}>
@@ -83,7 +92,7 @@ const PotsOverview = () => {
                 Total Saved
               </Typography>
               <Typography fontSize="32px" color={theme.palette.primary.main}>
-                {`${currencySymbol}${formatNumber(totalSaved)}`}
+                {`${currencySymbol}${formatNumber(potStats.totalSaved)}`}
               </Typography>
             </Stack>
           </Stack>
@@ -94,7 +103,7 @@ const PotsOverview = () => {
             columnSpacing="24px"
             columns={2}
           >
-            {fourPots.map((pot, index) => (
+            {potStats.topPots.map((pot, index) => (
               <Grid
                 key={index}
                 maxHeight={isParentWidth ? "100%" : "45%"}
