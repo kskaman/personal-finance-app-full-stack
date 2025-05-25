@@ -13,6 +13,12 @@ import { useNavigate } from "react-router";
 import EmptyStatePage from "../../ui/EmptyStatePage";
 import { useLatestTx } from "../transactions/hooks/useTransactions";
 import DotLoader from "../../ui/DotLoader";
+import { useBudgetStats } from "../budgets/hooks/useBudgets";
+import { usePotStats } from "../pots/hooks/usePots";
+import { useBillStats } from "../recurringBills/hooks/useBills";
+import { useContext } from "react";
+import { SettingsContext } from "../settings/context/SettingsContext";
+import { useBalance } from "./hooks/useBalance";
 
 const OverViewPage = () => {
   const { containerRef, parentWidth } = useParentWidth();
@@ -22,30 +28,86 @@ const OverViewPage = () => {
   const theme = useTheme();
 
   const {
+    data: balance = {
+      current: 0,
+      income: 0,
+      expenses: 0,
+    },
+    isLoading: isBalanceLoading,
+    isError: isBalanceError,
+    refetch: balanceRefetch,
+  } = useBalance();
+  const {
+    data: budgetStats = {
+      totalMaximum: 0,
+      budgets: [],
+    },
+    isLoading: isBudgetsStatsLoading,
+    isError: isBudgetStatsError,
+    refetch: budgetStatsRefetch,
+  } = useBudgetStats();
+
+  const {
     data: latestTransactions = [],
-    isLoading,
-    isError,
-    refetch,
+    isLoading: isLatestTxnLoading,
+    isError: isLatestTxnError,
+    refetch: latestTxnRefetch,
   } = useLatestTx();
+
+  const {
+    data: potStats = {
+      totalSaved: 0,
+      topPots: [],
+    },
+    isLoading: isPotsStatsLoading,
+    isError: isPotsStatsError,
+    refetch: potsStatsRefetch,
+  } = usePotStats();
+
+  const {
+    data: recurringSummary,
+    isLoading: isBillsLoading,
+    isError: isBillsError,
+    refetch: billsRefetch,
+  } = useBillStats();
+
+  const currencySymbol = useContext(SettingsContext).selectedCurrency;
 
   const navigate = useNavigate();
 
-  if (isLoading) {
+  if (
+    isBudgetsStatsLoading ||
+    isLatestTxnLoading ||
+    isPotsStatsLoading ||
+    isBillsLoading ||
+    isBalanceLoading
+  ) {
     return <DotLoader />;
   }
 
-  if (isError) {
+  if (
+    isBudgetStatsError ||
+    isLatestTxnError ||
+    isPotsStatsError ||
+    isBillsError ||
+    isBalanceError
+  ) {
     return (
       <EmptyStatePage
         message="Unable to fetch bills"
         subText="Check your connection and retry."
         buttonLabel="Retry"
         onButtonClick={() => {
-          refetch();
+          budgetStatsRefetch();
+          latestTxnRefetch();
+          potsStatsRefetch();
+          billsRefetch();
+          balanceRefetch();
         }}
       />
     );
   }
+
   // Decide if there is any data at all
 
   // If absolutely everything is empty, show a single empty-state layout:
@@ -81,7 +143,11 @@ const OverViewPage = () => {
               Overview
             </Typography>
 
-            <Balance isParentSm={isParentSm} />
+            <Balance
+              isParentSm={isParentSm}
+              balance={balance}
+              currencySymbol={currencySymbol}
+            />
             <Stack
               direction={isParentLg ? "column" : "row"}
               gap="24px"
@@ -92,16 +158,36 @@ const OverViewPage = () => {
                 gap="24px"
                 width={isParentLg ? "100%" : "50%"}
               >
-                {<PotsOverview />}
-                {<TransactionsOverview />}
+                {
+                  <PotsOverview
+                    potStats={potStats}
+                    currencySymbol={currencySymbol}
+                  />
+                }
+                {
+                  <TransactionsOverview
+                    currencySymbol={currencySymbol}
+                    latestTransactions={latestTransactions}
+                  />
+                }
               </Stack>
               <Stack
                 direction="column"
                 gap="24px"
                 width={isParentLg ? "100%" : "50%"}
               >
-                {<BudgetsOverview />}
-                {<BillsOverview />}
+                {
+                  <BudgetsOverview
+                    currencySymbol={currencySymbol}
+                    stats={budgetStats}
+                  />
+                }
+                {
+                  <BillsOverview
+                    currencySymbol={currencySymbol}
+                    recurringSummary={recurringSummary}
+                  />
+                }
               </Stack>
             </Stack>
           </Stack>

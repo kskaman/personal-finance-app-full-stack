@@ -1,6 +1,5 @@
 import { Box, Stack, Typography, useTheme } from "@mui/material";
 import Grid from "@mui/material/Grid2";
-import { useContext } from "react";
 import PotIcon from "../../../Icons/PotIcon";
 import CaretRightIcon from "../../../Icons/CaretRightIcon";
 import { formatNumber } from "../../../utils/utilityFunctions";
@@ -8,27 +7,26 @@ import SubContainer from "../../../ui/SubContainer";
 import useParentWidth from "../../../customHooks/useParentWidth";
 import { SM_BREAK } from "../../../constants/widthConstants";
 import { Link } from "react-router";
-import { SettingsContext } from "../../settings/context/SettingsContext";
-import { usePotStats } from "../../pots/hooks/usePots";
 
-const PotsOverview = () => {
+const PotsOverview = ({
+  potStats,
+  currencySymbol,
+}: {
+  potStats: {
+    totalSaved: number;
+    topPots: {
+      name: string;
+      total: number;
+      theme: string;
+    }[];
+  };
+  currencySymbol: string;
+}) => {
   const theme = useTheme();
 
   const { containerRef, parentWidth } = useParentWidth();
 
   const isParentWidth = parentWidth < SM_BREAK;
-
-  const currencySymbol = useContext(SettingsContext).selectedCurrency;
-
-  const {
-    data: potStats = {
-      totalSaved: 0,
-      topPots: [],
-    },
-    isError,
-  } = usePotStats();
-
-  if (isError) return null;
 
   return (
     <Box ref={containerRef}>

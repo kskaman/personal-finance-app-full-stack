@@ -7,7 +7,6 @@ import {
   Typography,
   useTheme,
 } from "@mui/material";
-import { useContext } from "react";
 
 import {
   convertDateObjectToString,
@@ -17,17 +16,16 @@ import {
 import CaretRightIcon from "../../../Icons/CaretRightIcon";
 import SubContainer from "../../../ui/SubContainer";
 import { Link } from "react-router";
-import { SettingsContext } from "../../settings/context/SettingsContext";
-import { useLatestTx } from "../../transactions/hooks/useTransactions";
 import { Transaction } from "../../../types/models";
 
-const TransactionsOverview = () => {
+const TransactionsOverview = ({
+  latestTransactions,
+  currencySymbol,
+}: {
+  latestTransactions: Transaction[];
+  currencySymbol: string;
+}) => {
   const theme = useTheme();
-  const { data: latestTransactions = [], isError } = useLatestTx();
-
-  const currencySymbol = useContext(SettingsContext).selectedCurrency;
-
-  if (isError) return null;
 
   return (
     <SubContainer gap="32px">

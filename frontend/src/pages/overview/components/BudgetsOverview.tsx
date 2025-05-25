@@ -2,24 +2,20 @@ import { Box, Stack, Typography, useTheme } from "@mui/material";
 import Grid from "@mui/material/Grid2";
 import CaretRightIcon from "../../../Icons/CaretRightIcon";
 import SubContainer from "../../../ui/SubContainer";
-import { useContext } from "react";
 import BudgetsPieChart from "../../budgets/components/BudgetsPieChart";
 import { formatNumber } from "../../../utils/utilityFunctions";
 import useParentWidth from "../../../customHooks/useParentWidth";
 import { Link } from "react-router";
-import { SettingsContext } from "../../settings/context/SettingsContext";
-import { useBudgetStats } from "../../budgets/hooks/useBudgets";
+import { Budget } from "../../../types/models";
 
-const BudgetsOverview = () => {
+const BudgetsOverview = ({
+  stats,
+  currencySymbol,
+}: {
+  stats: { totalMaximum: number; budgets: Budget[] };
+  currencySymbol: string;
+}) => {
   const theme = useTheme();
-
-  const {
-    data: stats = {
-      totalMaximum: 0,
-      budgets: [],
-    },
-    isError,
-  } = useBudgetStats();
 
   const topBudgets = stats.budgets.slice(0, 4);
 
@@ -28,9 +24,6 @@ const BudgetsOverview = () => {
   const { containerRef, parentWidth } = useParentWidth();
 
   const isParentWidth = parentWidth < 600;
-  const currencySymbol = useContext(SettingsContext).selectedCurrency;
-
-  if (isError) return null;
 
   return (
     <Box ref={containerRef}>

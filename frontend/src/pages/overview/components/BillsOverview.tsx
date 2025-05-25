@@ -1,19 +1,23 @@
 import { Stack, Typography, useTheme } from "@mui/material";
 import CaretRightIcon from "../../../Icons/CaretRightIcon";
 import SubContainer from "../../../ui/SubContainer";
-import { useContext } from "react";
 import { formatNumber } from "../../../utils/utilityFunctions";
 import { Link } from "react-router";
-import { SettingsContext } from "../../settings/context/SettingsContext";
-import { useBillStats } from "../../recurringBills/hooks/useBills";
 
-const BillsOverview = () => {
+const BillsOverview = ({
+  recurringSummary,
+  currencySymbol,
+}: {
+  recurringSummary: {
+    total: number;
+    paid: { count: number; total: number };
+    unpaid: { count: number; total: number };
+    due: { count: number; total: number };
+    dueSoon: { count: number; total: number };
+  };
+  currencySymbol: string;
+}) => {
   const theme = useTheme();
-  const { data: recurringSummary, isError } = useBillStats();
-  console.log(recurringSummary);
-  const currencySymbol = useContext(SettingsContext).selectedCurrency;
-
-  if (isError || !recurringSummary) return null;
 
   const summaryData = {
     paid: {
