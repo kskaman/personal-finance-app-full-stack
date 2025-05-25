@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { DataType } from "../types/Data";
-import BalanceTransactionsProvider from "./BalanceTransactionsProvider";
 import CategoryMarkerProvider from "./CategoryMarkerProvider";
 import { SettingsProvider } from "../pages/settings/context/SettingsProvider";
 import Loader from "../ui/Loader";
@@ -41,7 +40,6 @@ const DataProvider = ({ children }: DataProviderProps) => {
             bills: user.settings.bills,
             budgets: user.settings.budgets,
           },
-          transactions: user.transactions ?? [],
           categories: categories ?? [],
         };
 
@@ -87,12 +85,7 @@ const DataProvider = ({ children }: DataProviderProps) => {
       budgets={data.settings.budgets}
     >
       <CategoryMarkerProvider categories={data.categories}>
-        <BalanceTransactionsProvider
-          balance={data.balance}
-          transactions={data.transactions}
-        >
-          {children}
-        </BalanceTransactionsProvider>
+        {children}
       </CategoryMarkerProvider>
     </SettingsProvider>
   );

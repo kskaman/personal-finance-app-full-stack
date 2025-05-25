@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 
-import { Balance, Budget, Category, Currency, Font, Settings, Transaction } from "./models";
+import { Balance, Budget, Category, Currency, Font, Settings } from "./models";
 
 export interface BudgetStats {
   totalMaximum: number;
@@ -24,7 +24,6 @@ export interface DataType {
     userId: string;
     balance: Balance;
     settings: Settings;
-    transactions: Transaction[];
     categories: Category[];
   }
 

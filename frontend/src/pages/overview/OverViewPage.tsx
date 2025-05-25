@@ -65,14 +65,20 @@ const OverViewPage = () => {
   } = usePotStats();
 
   const {
-    data: recurringSummary,
+    data: recurringSummary = {
+      total: 0,
+      paid: { count: 0, total: 0 },
+      unpaid: { count: 0, total: 0 },
+      due: { count: 0, total: 0 },
+      dueSoon: { count: 0, total: 0 },
+    },
     isLoading: isBillsLoading,
     isError: isBillsError,
     refetch: billsRefetch,
   } = useBillStats();
 
-  const currencySymbol = useContext(SettingsContext).selectedCurrency;
-
+  const { selectedCurrency: currencySymbol, displayedModules } =
+    useContext(SettingsContext);
   const navigate = useNavigate();
 
   if (
@@ -158,12 +164,12 @@ const OverViewPage = () => {
                 gap="24px"
                 width={isParentLg ? "100%" : "50%"}
               >
-                {
+                {displayedModules.pots && potStats.topPots.length !== 0 && (
                   <PotsOverview
                     potStats={potStats}
                     currencySymbol={currencySymbol}
                   />
-                }
+                )}
                 {
                   <TransactionsOverview
                     currencySymbol={currencySymbol}
@@ -176,18 +182,19 @@ const OverViewPage = () => {
                 gap="24px"
                 width={isParentLg ? "100%" : "50%"}
               >
-                {
-                  <BudgetsOverview
-                    currencySymbol={currencySymbol}
-                    stats={budgetStats}
-                  />
-                }
-                {
+                {displayedModules.budgets &&
+                  budgetStats.budgets.length !== 0 && (
+                    <BudgetsOverview
+                      currencySymbol={currencySymbol}
+                      stats={budgetStats}
+                    />
+                  )}
+                {displayedModules.bills && (
                   <BillsOverview
                     currencySymbol={currencySymbol}
                     recurringSummary={recurringSummary}
                   />
-                }
+                )}
               </Stack>
             </Stack>
           </Stack>
