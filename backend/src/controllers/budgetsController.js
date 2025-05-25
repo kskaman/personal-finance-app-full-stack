@@ -139,43 +139,68 @@ export const deleteBudget = async (req, res) => {
 
 export const getBudgetStats = async (req, res) => {
   const userId = req.userId;
+  const { month } = req.body;
+
+  if (typeof month !== "string" || !/^\d{4}-\d{2}$/.test(month)) {
+    return res
+      .status(400)
+      .json({ message: "Invalid or missing month (yyyy-mm)" });
+  }
 
   try {
     // Get total maximum sum
     const aggregate = await prisma.budget.aggregate({
       where: { userId },
-      _sum: {
-        maximum: true,
-      },
+      _sum: { maximum: true },
     });
 
-    // Get top 4 budgets sorted alphabetically by category name
-    const topBudgetsRaw = await prisma.budget.findMany({
+    // Fetch all budgets for the user
+    const allBudgets = await prisma.budget.findMany({
       where: { userId },
       select: {
+        id: true,
         maximum: true,
-        category: {
-          select: { name: true },
-        },
+        category: { select: { name: true } },
         theme: true,
       },
-      orderBy: {
-        category: {
-          name: "asc",
-        },
-      },
-      take: 4,
+      orderBy: { category: { name: "asc" } },
     });
 
-    const topBudgets = topBudgetsRaw.map((b) => ({
-      maximum: b.maximum,
+    const allCategories = allBudgets.map((b) => b.category.name);
+
+    const start = new Date(`${month}-01T00:00:00Z`);
+    const end = new Date(start);
+    end.setMonth(end.getMonth() + 1);
+
+    const transactions = await prisma.transaction.findMany({
+      where: {
+        userId,
+        date: { gte: start, lt: end },
+        category: { name: { in: allCategories } },
+      },
+      include: { category: true },
+    });
+
+    const spentByCategory = {};
+
+    for (const tx of transactions) {
+      const name = tx.category.name;
+      const amt = tx.amount < 0 ? Math.abs(tx.amount) : 0;
+      if (!spentByCategory[name]) spentByCategory[name] = 0;
+      spentByCategory[name] += amt;
+    }
+
+    const budgets = allBudgets.map((b) => ({
+      id: b.id,
       category: b.category.name,
       theme: b.theme,
+      maximum: b.maximum,
+      spent: spentByCategory[b.category.name] || 0,
     }));
 
     res.status(200).json({
       totalMaximum: aggregate._sum.maximum ?? 0,
-      topBudgets,
+      budgets,
     });
   } catch (err) {
     console.error(err);

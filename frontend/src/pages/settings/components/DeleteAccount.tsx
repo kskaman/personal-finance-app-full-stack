@@ -73,7 +73,7 @@ const DeleteAccount = () => {
           label={user?.name ?? "Account"}
           warningText={`Are you sure you want to delete your account? 
             This action cannot be reversed. All data will be removed and 
-            you will be redirected to the sign‑in page.`}
+            you will be redirected to the sign-in page.`}
           type="account"
         />
       )}

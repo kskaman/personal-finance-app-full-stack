@@ -143,7 +143,11 @@ export const getMonthlyTransactionsByCategoryNames = async (req, res) => {
   const userId = req.userId;
   const { categoryNames, month } = req.body;
 
-  if (!Array.isArray(categoryNames) || typeof month !== "string") {
+  if (
+    !Array.isArray(categoryNames) ||
+    typeof month !== "string" ||
+    !/^\d{4}-\d{2}$/.test(month)
+  ) {
     return res.status(400).json({ message: "Invalid request payload" });
   }
 
@@ -379,17 +383,24 @@ export const updateTransaction = async (req, res) => {
         where: { userId },
         data: {
           current: { increment: diff },
+
           income:
-            diff > 0
+            original.amount > 0 && amount > 0
               ? { increment: diff }
-              : original.amount > 0
-              ? { decrement: -diff }
+              : original.amount > 0 && amount <= 0
+              ? { decrement: original.amount }
+              : original.amount <= 0 && amount > 0
+              ? { increment: amount }
               : undefined,
+
+          /* expenses column */
           expenses:
-            diff < 0
+            original.amount < 0 && amount < 0
               ? { increment: Math.abs(diff) }
-              : original.amount < 0
-              ? { decrement: diff }
+              : original.amount < 0 && amount >= 0
+              ? { decrement: Math.abs(original.amount) }
+              : original.amount >= 0 && amount < 0
+              ? { increment: Math.abs(amount) }
               : undefined,
         },
       });
@@ -464,7 +475,7 @@ export const deleteTransaction = async (req, res) => {
       await tx.balance.update({
         where: { userId: userId },
         data: {
-          current: { decrement: txn.amount },
+          current: { increment: -txn.amount },
           income: isIncome ? { decrement: txn.amount } : undefined,
           expenses: !isIncome ? { decrement: Math.abs(txn.amount) } : undefined,
         },

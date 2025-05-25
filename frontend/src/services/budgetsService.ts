@@ -22,7 +22,10 @@ export const fetchTransactionsByBudget = async (budgetCategories: string[]):
 
 
 export const fetchBudgetStats = async (): Promise<BudgetStats> => {
-  const res = await api.get("/budgets/stats");
+  const now = new Date();
+  const month = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}`;
+
+  const res = await api.post("/budgets/stats", { month });
   return res.data;
 }
 

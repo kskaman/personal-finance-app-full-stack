@@ -54,10 +54,10 @@ export enum Font {
   
   export interface Budget {
     id: string;
-    userId: string;
     category: string;
     maximum: number;
     theme: string;
+    spent: number;
   }
   
   export interface Pot {

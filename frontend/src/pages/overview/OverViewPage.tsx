@@ -9,13 +9,10 @@ import BillsOverview from "./components/BillsOverview";
 import PageDiv from "../../ui/PageDiv";
 import useParentWidth from "../../customHooks/useParentWidth";
 import { LG_BREAK, SM_BREAK } from "../../constants/widthConstants";
-import { useContext } from "react";
-import { BalanceTransactionsDataContext } from "../../context/BalanceTransactionsContext";
 import { useNavigate } from "react-router";
 import EmptyStatePage from "../../ui/EmptyStatePage";
-import { PotsDataContext } from "../pots/context/PotsContext";
-import { BudgetsDataContext } from "../budgets/context/BudgetsContext";
-import { RecurringDataContext } from "../recurringBills/context/RecurringContext";
+import { useLatestTx } from "../transactions/hooks/useTransactions";
+import DotLoader from "../../ui/DotLoader";
 
 const OverViewPage = () => {
   const { containerRef, parentWidth } = useParentWidth();
@@ -24,34 +21,41 @@ const OverViewPage = () => {
 
   const theme = useTheme();
 
+  const {
+    data: latestTransactions = [],
+    isLoading,
+    isError,
+    refetch,
+  } = useLatestTx();
+
   const navigate = useNavigate();
 
-  // Grabbing data from your contexts
-  const { balance, transactions } = useContext(BalanceTransactionsDataContext);
-  const { pots } = useContext(PotsDataContext);
-  const { budgets } = useContext(BudgetsDataContext);
-  const { recurringBills } = useContext(RecurringDataContext);
+  if (isLoading) {
+    return <DotLoader />;
+  }
 
+  if (isError) {
+    return (
+      <EmptyStatePage
+        message="Unable to fetch bills"
+        subText="Check your connection and retry."
+        buttonLabel="Retry"
+        onButtonClick={() => {
+          refetch();
+        }}
+      />
+    );
+  }
   // Decide if there is any data at all
-  const hasNonZeroBalance =
-    balance.current !== 0 || balance.income !== 0 || balance.expenses !== 0;
-
-  const hasTransactions = transactions.length > 0;
-  const hasPots = pots.length > 0;
-  const hasBudgets = budgets.length > 0;
-  const hasBills = recurringBills.length > 0;
-
-  const hasAnyData =
-    hasNonZeroBalance || hasTransactions || hasPots || hasBudgets || hasBills;
 
   // If absolutely everything is empty, show a single empty-state layout:
-  if (!hasAnyData) {
+  if (latestTransactions.length === 0) {
     return (
       <>
         <SetTitle title="Overview" />
         <EmptyStatePage
           message="No Data Yet"
-          subText="You haven't added any balances, transactions, pots, budgets or bills. Let's get started!"
+          subText={`You haven't added any balances, transactions. Let's get started!`}
           buttonLabel="Go to Transactions Page"
           onButtonClick={() => {
             navigate("/transactions");
@@ -88,16 +92,16 @@ const OverViewPage = () => {
                 gap="24px"
                 width={isParentLg ? "100%" : "50%"}
               >
-                {hasPots && <PotsOverview />}
-                {hasTransactions && <TransactionsOverview />}
+                {<PotsOverview />}
+                {<TransactionsOverview />}
               </Stack>
               <Stack
                 direction="column"
                 gap="24px"
                 width={isParentLg ? "100%" : "50%"}
               >
-                {hasBudgets && <BudgetsOverview />}
-                {hasBills && <BillsOverview />}
+                {<BudgetsOverview />}
+                {<BillsOverview />}
               </Stack>
             </Stack>
           </Stack>

@@ -1,15 +1,12 @@
 import { ReactNode } from "react";
 
-import { Balance, Category, Currency, Font, Settings, Transaction } from "./models";
+import { Balance, Budget, Category, Currency, Font, Settings, Transaction } from "./models";
 
 export interface BudgetStats {
   totalMaximum: number;
-  topBudgets: {
-    maximum: number;
-    category: string;
-    theme: string;
-  }[];
+  budgets: Budget[];
 }
+
 
 export interface MarkerTheme {
     label: string;

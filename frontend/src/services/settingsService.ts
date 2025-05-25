@@ -22,4 +22,4 @@ export const logoutUser = async (): Promise<void> => {
   await api.post("/auth/logout");
 };
 
-export const deleteAccount = async () =>  await api.delete("/auth/users/me", { withCredentials: true });
+export const deleteAccount = async () =>  await api.delete("/user/me", { withCredentials: true });

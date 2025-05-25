@@ -10,7 +10,6 @@ import { SM_BREAK } from "../../../constants/widthConstants";
 import { Link } from "react-router";
 import { SettingsContext } from "../../settings/context/SettingsContext";
 import { usePotStats } from "../../pots/hooks/usePots";
-import DotLoader from "../../../ui/DotLoader";
 
 const PotsOverview = () => {
   const theme = useTheme();
@@ -26,11 +25,8 @@ const PotsOverview = () => {
       totalSaved: 0,
       topPots: [],
     },
-    isLoading,
     isError,
   } = usePotStats();
-
-  if (isLoading) return <DotLoader />;
 
   if (isError) return null;
 

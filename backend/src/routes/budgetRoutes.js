@@ -13,7 +13,7 @@ const router = express.Router();
 router.use(authenticate);
 
 router.get("/", getBudgets);
-router.get("/stats", getBudgetStats);
+router.post("/stats", getBudgetStats);
 router.post("/", addBudget);
 router.patch("/:id", updateBudget);
 router.delete("/:id", deleteBudget);

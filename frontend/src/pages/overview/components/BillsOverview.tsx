@@ -6,16 +6,14 @@ import { formatNumber } from "../../../utils/utilityFunctions";
 import { Link } from "react-router";
 import { SettingsContext } from "../../settings/context/SettingsContext";
 import { useBillStats } from "../../recurringBills/hooks/useBills";
-import DotLoader from "../../../ui/DotLoader";
 
 const BillsOverview = () => {
   const theme = useTheme();
-  const { data: recurringSummary, isLoading, isError } = useBillStats();
-
+  const { data: recurringSummary, isError } = useBillStats();
+  console.log(recurringSummary);
   const currencySymbol = useContext(SettingsContext).selectedCurrency;
 
-  if (isLoading) return <DotLoader />;
-  if (isError) return null;
+  if (isError || !recurringSummary) return null;
 
   const summaryData = {
     paid: {

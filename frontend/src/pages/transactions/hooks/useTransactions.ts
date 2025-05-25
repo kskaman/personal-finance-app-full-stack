@@ -7,6 +7,7 @@ import {
   TxQuery,
   TxProps,
   fetchTxnMeta,
+  fetchLatestTransactions,
 } from "../../../services/transactionService.ts";
 
 export const useTransactions = ({ params }: { params: TxQuery }) => useQuery({
@@ -14,6 +15,11 @@ export const useTransactions = ({ params }: { params: TxQuery }) => useQuery({
     queryFn: () => fetchTransactions(params),
     placeholderData: (prevData) => prevData,
   });
+
+export const useLatestTx = () => useQuery({
+    queryKey: ["transactions", "latest"],
+    queryFn: fetchLatestTransactions,
+})
 
 export const useTxnStats = () => useQuery({
     queryKey: ["transactions", "txnStats"],
@@ -55,3 +61,4 @@ export const useRemoveTx = () => {
         onSuccess: invalidate,
   });
 };
+

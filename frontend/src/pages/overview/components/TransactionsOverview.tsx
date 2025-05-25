@@ -10,23 +10,24 @@ import {
 import { useContext } from "react";
 
 import {
-  formatDateToReadable,
+  convertDateObjectToString,
   formatNumber,
   getInitials,
 } from "../../../utils/utilityFunctions";
 import CaretRightIcon from "../../../Icons/CaretRightIcon";
 import SubContainer from "../../../ui/SubContainer";
-import { BalanceTransactionsDataContext } from "../../../context/BalanceTransactionsContext";
 import { Link } from "react-router";
 import { SettingsContext } from "../../settings/context/SettingsContext";
+import { useLatestTx } from "../../transactions/hooks/useTransactions";
+import { Transaction } from "../../../types/models";
 
 const TransactionsOverview = () => {
   const theme = useTheme();
-  const latestTransactions = useContext(
-    BalanceTransactionsDataContext
-  ).transactions.slice(0, 5);
+  const { data: latestTransactions = [], isError } = useLatestTx();
 
   const currencySymbol = useContext(SettingsContext).selectedCurrency;
+
+  if (isError) return null;
 
   return (
     <SubContainer gap="32px">
@@ -66,7 +67,7 @@ const TransactionsOverview = () => {
       </Stack>
 
       <List>
-        {latestTransactions.map((transaction, index) => (
+        {latestTransactions.map((transaction: Transaction, index: number) => (
           <div key={transaction.id}>
             <ListItem
               sx={{
@@ -126,7 +127,7 @@ const TransactionsOverview = () => {
                   </Typography>
                 )}
                 <Typography fontSize="12px" color={theme.palette.primary.light}>
-                  {formatDateToReadable(transaction.date)}
+                  {convertDateObjectToString(transaction.date)}
                 </Typography>
               </Stack>
             </ListItem>

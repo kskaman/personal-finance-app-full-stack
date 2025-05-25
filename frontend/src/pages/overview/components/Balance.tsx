@@ -7,10 +7,12 @@ import { useBalance } from "../hooks/useBalance";
 const Balance = ({ isParentSm }: { isParentSm: boolean }) => {
   const theme = useTheme();
 
-  const { data: balance = { current: 0, income: 0, expenses: 0 } } =
+  const { data: balance = { current: 0, income: 0, expenses: 0 }, isError } =
     useBalance();
 
   const currencySymbol = useContext(SettingsContext).selectedCurrency;
+
+  if (isError) return null;
 
   return (
     <>
@@ -35,7 +37,9 @@ const Balance = ({ isParentSm }: { isParentSm: boolean }) => {
             Current Balance
           </Typography>
           <Typography fontSize="32px" color={theme.palette.text.primary}>
-            {`${currencySymbol}${formatNumber(balance.current)}`}
+            {balance.current < 0
+              ? `-${currencySymbol}${formatNumber(Math.abs(balance.current))}`
+              : `${currencySymbol}${formatNumber(Math.abs(balance.current))}`}
           </Typography>
         </Stack>
         <Stack
@@ -51,7 +55,9 @@ const Balance = ({ isParentSm }: { isParentSm: boolean }) => {
             Income
           </Typography>
           <Typography fontSize="32px" color={theme.palette.primary.main}>
-            {`${currencySymbol}${formatNumber(balance.income)}`}
+            {balance.income < 0
+              ? `-${currencySymbol}${formatNumber(Math.abs(balance.income))}`
+              : `${currencySymbol}${formatNumber(Math.abs(balance.income))}`}
           </Typography>
         </Stack>
         <Stack

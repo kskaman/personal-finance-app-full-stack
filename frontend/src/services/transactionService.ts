@@ -31,6 +31,11 @@ export const fetchTransactions = async (q: TxQuery): Promise<TxResponse> => {
   return data;
 };
 
+export const fetchLatestTransactions = async (): Promise<Transaction[]> => {
+  const { data } = await api.get("/transactions/latest")
+  return data;
+}
+
 export const createTx = async (payload: TxProps) => {
   console.log(payload);
   return await api.post("/transactions", payload);

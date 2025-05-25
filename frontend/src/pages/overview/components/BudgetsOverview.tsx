@@ -3,39 +3,34 @@ import Grid from "@mui/material/Grid2";
 import CaretRightIcon from "../../../Icons/CaretRightIcon";
 import SubContainer from "../../../ui/SubContainer";
 import { useContext } from "react";
-import { BalanceTransactionsDataContext } from "../../../context/BalanceTransactionsContext";
 import BudgetsPieChart from "../../budgets/components/BudgetsPieChart";
 import { formatNumber } from "../../../utils/utilityFunctions";
 import useParentWidth from "../../../customHooks/useParentWidth";
 import { Link } from "react-router";
-import { BudgetsDataContext } from "../../budgets/context/BudgetsContext";
 import { SettingsContext } from "../../settings/context/SettingsContext";
+import { useBudgetStats } from "../../budgets/hooks/useBudgets";
 
 const BudgetsOverview = () => {
   const theme = useTheme();
-  const { budgets, budgetsTotal } = useContext(BudgetsDataContext);
-  const { monthlySpentByCategory } = useContext(
-    BalanceTransactionsDataContext
-  ) as {
-    monthlySpentByCategory: Record<string, number>;
-  };
 
-  const colorsArr = budgets.map((budget) => budget.theme);
+  const {
+    data: stats = {
+      totalMaximum: 0,
+      budgets: [],
+    },
+    isError,
+  } = useBudgetStats();
 
-  const budgetCategories = budgets.map((budget) => budget.category);
-  const monthlySpent: Record<string, number> = budgetCategories.reduce<
-    Record<string, number>
-  >((acc, category) => {
-    acc[category] = monthlySpentByCategory[category] || 0;
-    return acc;
-  }, {} as Record<string, number>);
+  const topBudgets = stats.budgets.slice(0, 4);
 
-  const monthlySpentValues = Object.values(monthlySpent);
+  const colorsArr = stats.budgets.map((budget) => budget.theme);
 
   const { containerRef, parentWidth } = useParentWidth();
 
   const isParentWidth = parentWidth < 600;
   const currencySymbol = useContext(SettingsContext).selectedCurrency;
+
+  if (isError) return null;
 
   return (
     <Box ref={containerRef}>
@@ -85,8 +80,8 @@ const BudgetsOverview = () => {
         >
           <Stack alignItems="center" justifyContent="center">
             <BudgetsPieChart
-              spendings={monthlySpentValues}
-              limit={budgetsTotal}
+              spendings={stats.budgets.map((b) => b.spent)}
+              limit={stats.totalMaximum}
               colors={colorsArr}
             />
           </Stack>
@@ -98,7 +93,7 @@ const BudgetsOverview = () => {
             columns={isParentWidth ? 2 : 1}
             width={isParentWidth ? "100%" : "40%"}
           >
-            {budgets.map((budget) => (
+            {topBudgets.map((budget) => (
               <Grid
                 key={budget.category}
                 size={1}

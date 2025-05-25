@@ -27,7 +27,6 @@ import EmptyStatePage from "../../ui/EmptyStatePage";
 import { SettingsContext } from "../settings/context/SettingsContext";
 import { Budget, Category } from "../../types/models";
 import {
-  useBudgets,
   useBudgetStats,
   useBudgetTransactions,
   useCreateBudget,
@@ -35,7 +34,6 @@ import {
   useUpdateBudget,
 } from "./hooks/useBudgets";
 import DotLoader from "../../ui/DotLoader";
-import { computeMonthlySpentByCategory } from "../../utils/monthLySpent";
 import { defaultThemes } from "../../constants/markerThemes";
 
 const BudgetsPage = () => {
@@ -43,15 +41,19 @@ const BudgetsPage = () => {
 
   const currencySymbol = useContext(SettingsContext).selectedCurrency;
 
-  const { data: budgets = [], isLoading, isError, refetch } = useBudgets();
   const {
-    data: stats,
+    data: stats = {
+      totalMaximum: 0,
+      budgets: [],
+    },
     isLoading: isStatsLoading,
     isError: isStatsError,
     refetch: refetchStats,
   } = useBudgetStats();
 
-  const budgetCategories = budgets.map((budget: Budget) => budget.category);
+  const budgetCategories = stats.budgets.map(
+    (budget: Budget) => budget.category
+  );
   const {
     data: transactionsMap = {},
     isLoading: isTxnMapLoading,
@@ -77,14 +79,9 @@ const BudgetsPage = () => {
     });
   }, [budgetCategories, categories]);
 
-  const monthlySpentByCategory = useMemo(
-    () => computeMonthlySpentByCategory(transactionsMap),
-    [transactionsMap]
-  );
-
   const updatedThemeOptions = useMemo(() => {
-    return updateUsedStatuses(budgets, defaultThemes).updatedMarkerThemes;
-  }, [budgets]);
+    return updateUsedStatuses(stats.budgets, defaultThemes).updatedMarkerThemes;
+  }, [stats.budgets]);
 
   const { containerRef, parentWidth } = useParentWidth();
   const isParentLg = parentWidth < LG_BREAK;
@@ -150,18 +147,17 @@ const BudgetsPage = () => {
     setSelectedBudget(null);
   }, [deleteBudgetMutation, selectedBudget]);
 
-  if (isLoading || isStatsLoading || isTxnMapLoading) {
+  if (isStatsLoading || isTxnMapLoading) {
     return <DotLoader />;
   }
 
-  if (isError || isStatsError || isTxnMapError) {
+  if (isStatsError || isTxnMapError) {
     return (
       <EmptyStatePage
         message="Unable to fetch budgets"
         subText="Check your connection."
         buttonLabel="Retry"
         onButtonClick={() => {
-          refetch();
           refetchStats();
           refetchTxnMap();
         }}
@@ -169,7 +165,7 @@ const BudgetsPage = () => {
     );
   }
 
-  if (budgets.length === 0 || stats === undefined) {
+  if (stats === undefined || stats.budgets.length === 0) {
     return (
       <>
         <EmptyStatePage
@@ -205,6 +201,8 @@ const BudgetsPage = () => {
       </>
     );
   }
+
+  const topBudgets = stats.budgets.slice(0, 4);
 
   return (
     <>
@@ -262,9 +260,9 @@ const BudgetsPage = () => {
                   }
                 >
                   <BudgetsPieChart
-                    spendings={Object.values(monthlySpentByCategory)}
+                    spendings={stats.budgets.map((b) => b.spent)}
                     limit={stats.totalMaximum}
-                    colors={budgets.map((b) => b.theme)}
+                    colors={stats.budgets.map((b) => b.theme)}
                   />
                   <Stack
                     gap="24px"
@@ -279,15 +277,8 @@ const BudgetsPage = () => {
                       Spending Summary
                     </Typography>
                     <List>
-                      {stats.topBudgets.map(
-                        (
-                          budget: {
-                            category: string;
-                            maximum: number;
-                            theme: string;
-                          },
-                          index: number
-                        ) => (
+                      {topBudgets.map((budget: Budget, index: number) => {
+                        return (
                           <div key={budget.category}>
                             <ListItem
                               sx={{
@@ -321,7 +312,7 @@ const BudgetsPage = () => {
                                   color={theme.palette.primary.main}
                                 >
                                   {`${currencySymbol}${formatNumber(
-                                    monthlySpentByCategory[budget.category]
+                                    budget.spent
                                   )}`}
                                 </Typography>
                                 <Typography fontSize="14px">
@@ -331,10 +322,10 @@ const BudgetsPage = () => {
                                 </Typography>
                               </Stack>
                             </ListItem>
-                            {index < budgets.length - 1 && <Divider />}
+                            {index < topBudgets.length - 1 && <Divider />}
                           </div>
-                        )
-                      )}
+                        );
+                      })}
                     </List>
                   </Stack>
                 </Stack>
@@ -342,7 +333,7 @@ const BudgetsPage = () => {
 
               {/* Budgets per category */}
               <Stack flex={5} gap="24px">
-                {budgets.map((budget) => (
+                {stats.budgets.map((budget) => (
                   <div key={budget.category}>
                     <BudgetsItem
                       setEditModalOpen={() => {
@@ -355,9 +346,7 @@ const BudgetsPage = () => {
                         openDeleteModal();
                       }}
                       budget={budget}
-                      monthlySpentForCategory={
-                        monthlySpentByCategory[budget.category]
-                      }
+                      monthlySpentForCategory={budget.spent}
                       transactionsForCategory={transactionsMap[budget.category]}
                     />
                   </div>
