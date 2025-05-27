@@ -1,7 +1,7 @@
 import { Box, Stack, Typography, useTheme } from "@mui/material";
 import SetTitle from "../../ui/SetTitle";
 import PageDiv from "../../ui/PageDiv";
-import { useCallback, useContext, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import Total from "./components/Total";
 import Summary from "./components/Summary";
 import BillsTable from "./components/BillsTable";
@@ -12,10 +12,9 @@ import useModal from "../../customHooks/useModal";
 
 import Button from "../../ui/Button";
 import { getRandomColor } from "../../utils/utilityFunctions";
-import { BalanceTransactionsActionContext } from "../../context/BalanceTransactionsContext";
 import EmptyStatePage from "../../ui/EmptyStatePage";
 import Filter from "../../ui/Filter";
-import { RecurringBill, Transaction } from "../../types/models";
+import { RecurringBill } from "../../types/models";
 import {
   useBills,
   useCreateBill,
@@ -51,9 +50,6 @@ const BillsPage = () => {
   const addBillMutation = useCreateBill();
   const editBillMutation = useUpdateBill();
   const delBillMutation = useDeleteBill();
-
-  // If bill changes should propagate to transactions:
-  const { setTransactions } = useContext(BalanceTransactionsActionContext);
 
   // Modal management hooks.
   const {
@@ -106,16 +102,8 @@ const BillsPage = () => {
           amount: -parseFloat(formData.amount),
         },
       });
-
-      setTransactions((prevTxns: Transaction[]) =>
-        prevTxns.map((txn) =>
-          txn.recurring && txn.recurringId === billId
-            ? { ...txn, name: formData.name, category: formData.category }
-            : txn
-        )
-      );
     },
-    [editBillMutation, setTransactions]
+    [editBillMutation]
   );
 
   // Delete bill handler

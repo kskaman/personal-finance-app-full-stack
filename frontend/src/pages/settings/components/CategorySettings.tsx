@@ -10,7 +10,6 @@ import Button from "../../../ui/Button.tsx";
 import useModal from "../../../customHooks/useModal.ts";
 import DeleteModal from "../../../ui/DeleteModal.tsx";
 import AddEditCategoryModal from "./AddEditCategory.tsx";
-import { BalanceTransactionsActionContext } from "../../../context/BalanceTransactionsContext.tsx";
 import { Category } from "../../../types/models.ts";
 import {
   createCategory,
@@ -28,7 +27,6 @@ interface CategorySettingsProps {
 const CategorySettings = ({ parentWidth }: CategorySettingsProps) => {
   const theme = useTheme();
   const { categories, setCategories } = useContext(CategoryMarkerContext);
-  const { setTransactions } = useContext(BalanceTransactionsActionContext);
   const {
     isOpen: isDeleteModal,
     openModal: openDeleteModal,
@@ -61,36 +59,20 @@ const CategorySettings = ({ parentWidth }: CategorySettingsProps) => {
   const handleEditCategory = async (categoryName: string) => {
     if (!selectedCategory) return;
     const newName = capitalizeSentence(categoryName);
-    const oldName = selectedCategory.name;
     const updated = await renameCategory(selectedCategory.id, newName);
 
     setCategories((prev) =>
       prev.map((c) => (c.id === updated.id ? updated : c))
-    );
-
-    // Update transactions: Replace old category name with new one
-    setTransactions((prevTxs) =>
-      prevTxs.map((tx) =>
-        tx.category === oldName ? { ...tx, category: newName } : tx
-      )
     );
   };
 
   // Delete Category
   const handleDeleteCategory = async () => {
     if (!selectedCategory) return;
-    const deletedCategoryName = selectedCategory.name;
     await deleteCategory(selectedCategory.id);
     setCategories((prev) => prev.filter((c) => c.id !== selectedCategory.id));
 
     // Update transactions so that any transaction that had the deleted category now is "General"
-    setTransactions((prevTxs) =>
-      prevTxs.map((tx) =>
-        tx.category === deletedCategoryName
-          ? { ...tx, category: "General" }
-          : tx
-      )
-    );
     setSelectedCategory(null);
   };
 
