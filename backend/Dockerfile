@@ -24,8 +24,6 @@ RUN npx prisma generate
 # Now copy the rest of your code
 COPY . .
 
-# Expose the port
-EXPOSE 3000
 
 # make docker-entrypoint.sh executable
 COPY docker-entrypoint.sh ./
@@ -33,6 +31,9 @@ RUN chmod +x docker-entrypoint.sh
 
 # Set production environment
 ENV NODE_ENV=production
+# Expose the port
+EXPOSE 3000
+
 
 ENTRYPOINT ["./docker-entrypoint.sh"]
 

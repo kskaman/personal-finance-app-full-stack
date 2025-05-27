@@ -17,7 +17,7 @@ services:
     container_name: finance-db
     restart: always
     env_file:
-      - .env
+      - .env.production
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
