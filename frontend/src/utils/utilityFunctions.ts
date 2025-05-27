@@ -5,40 +5,8 @@ export const formatNumber = (num: number) => {
 export const formatDecimalNumber = (num: number): string => {
   return num.toFixed(2);
 };
-  
 
 
-
-const monthCode: {[key: string]: string} = {
-  "01": "Jan",
-  "02": "Feb",
-  "03": "Mar",
-  "04": "Apr",
-  "05": "May",
-  "06": "Jun",
-  "07": "Jul",
-  "08": "Aug",
-  "09": "Sep",
-  "10": "Oct",
-  "11": "Nov",
-  "12": "Dec"
-}
-
-
-export const formatISODateToDDMMYYYY = (isoDate : string) =>  {
-  const date = new Date(isoDate);
-  const day = String(date.getDate()).padStart(2, "0");
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const year = date.getFullYear();
-  return `${day}/${month}/${year}`;
-}
-
-
-export const convertDateToISOString = (dateStr: string): string => {
-  const [day, month, year] = dateStr.split("/").map(Number);
-  const dateObj = new Date(year, month - 1, day);
-  return dateObj.toISOString();
-};
 
 export const convertDateToDateObject = (dateStr: string): Date => {
   const [day, month, year] = dateStr.split("/").map(Number);
@@ -53,13 +21,6 @@ export const convertDateObjectToString = (d: Date): string => {
   return `${day}/${month}/${year}`;
 };
 
-export const formatDateToReadable = (dateString: string) => {
-  const date = dateString.split("T")[0].split("-");
-  const day = date[2];
-  const month = monthCode[date[1]];
-  const year = date[0];
-  return `${day} ${month} ${year}`;
-};
 
 
 
@@ -112,19 +73,6 @@ export const getRandomColor = () => {
     "#f2cdac", // yellow
   ];
   return colors[Math.floor(Math.random() * colors.length)];
-};
-
-
-
-export const formatDate = (isoDate: string): string => {
-  const date = new Date(isoDate);
-  
-  // Convert to local time
-  const day = date.getDate();
-  const month = date.toLocaleString("en-US", { month: "short" });
-  const year = date.getFullYear();
-
-  return `${day} ${month} ${year}`;
 };
 
 

@@ -8,7 +8,7 @@ import {
   useTheme,
 } from "@mui/material";
 import {
-  formatDateToReadableString,
+  convertDateObjectToString,
   formatNumber,
   getInitials,
 } from "../../../utils/utilityFunctions";
@@ -97,7 +97,7 @@ const BudgetTransactionsModal = ({
                     fontSize="12px"
                     color={theme.palette.primary.light}
                   >
-                    {formatDateToReadableString(transaction.date)}
+                    {convertDateObjectToString(transaction.date)}
                   </Typography>
                 </Stack>
               </ListItem>
