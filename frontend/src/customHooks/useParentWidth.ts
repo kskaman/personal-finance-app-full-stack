@@ -1,23 +1,34 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 const useParentWidth = () => {
-  const containerRef = useRef<HTMLDivElement>(null);
+  const nodeRef = useRef<HTMLDivElement | null>(null);
   const [parentWidth, setParentWidth] = useState<number>(window.innerWidth);
 
-  useEffect(() => {
-    if (!containerRef.current) return;
-
-    const resizeObserver = new ResizeObserver(([entry]) => {
-      const newWidth = entry.contentRect.width;
-      setParentWidth(newWidth);
-    });
-
-    resizeObserver.observe(containerRef.current);
-
-    return () => resizeObserver.disconnect();
+  // this function is executed when React gives us the element node
+  const setRef = useCallback((node: HTMLDivElement | null) => {
+    if (node) {
+      // element just mounted 
+      nodeRef.current = node;
+      setParentWidth(node.getBoundingClientRect().width);
+    }
   }, []);
 
-  return { containerRef, parentWidth };
+  // keep listening to viewport resizes
+  useEffect(() => {
+    const handle = () => {
+      if (!nodeRef.current) return;
+      const newW = nodeRef.current.getBoundingClientRect().width;
+      setParentWidth(prev => (prev === newW ? prev : newW));
+    };
+
+    // run once in case the element mounted after the first render
+    handle();
+
+    window.addEventListener("resize", handle);
+    return () => window.removeEventListener("resize", handle);
+  }, []);
+
+  return { containerRef: setRef, parentWidth };
 };
 
 export default useParentWidth;
