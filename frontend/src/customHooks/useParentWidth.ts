@@ -1,31 +1,33 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 
 const useParentWidth = () => {
   const nodeRef = useRef<HTMLDivElement | null>(null);
   const [parentWidth, setParentWidth] = useState<number>(window.innerWidth);
 
-  // this function is executed when React gives us the element node
+  const observerRef = useRef<ResizeObserver | null>(null);
+
   const setRef = useCallback((node: HTMLDivElement | null) => {
-    if (node) {
-      // element just mounted 
-      nodeRef.current = node;
-      setParentWidth(node.getBoundingClientRect().width);
+    if (observerRef.current) {
+      observerRef.current.disconnect(); // cleanup any previous observer
+      observerRef.current = null;
     }
-  }, []);
 
-  // keep listening to viewport resizes
-  useEffect(() => {
-    const handle = () => {
-      if (!nodeRef.current) return;
-      const newW = nodeRef.current.getBoundingClientRect().width;
-      setParentWidth(prev => (prev === newW ? prev : newW));
-    };
+    if (node) {
+      nodeRef.current = node;
+      const width = node.getBoundingClientRect().width;
+      setParentWidth(width);
 
-    // run once in case the element mounted after the first render
-    handle();
+      // setup ResizeObserver when node is available
+      observerRef.current = new ResizeObserver((entries) => {
+        const entry = entries[0];
+        if (entry) {
+          const newWidth = entry.contentRect.width;
+          setParentWidth(prev => (prev !== newWidth ? newWidth : prev));
+        }
+      });
 
-    window.addEventListener("resize", handle);
-    return () => window.removeEventListener("resize", handle);
+      observerRef.current.observe(node);
+    }
   }, []);
 
   return { containerRef: setRef, parentWidth };
