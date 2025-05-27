@@ -12,13 +12,11 @@ RUN apt-get update -y && \
 # Copy in your package files first
 COPY package*.json ./
 
-# Install dependencies
+# Install dependencies (production only)
 RUN npm ci --omit=dev
-
 
 # Copy in your Prisma schema so we can generate
 COPY prisma ./prisma
-
 
 # Generate the Prisma client inside the container
 RUN npx prisma generate
@@ -32,6 +30,9 @@ EXPOSE 3000
 # make docker-entrypoint.sh executable
 COPY docker-entrypoint.sh ./
 RUN chmod +x docker-entrypoint.sh
+
+# Set production environment
+ENV NODE_ENV=production
 
 ENTRYPOINT ["./docker-entrypoint.sh"]
 
