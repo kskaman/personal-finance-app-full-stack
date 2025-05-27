@@ -14,10 +14,10 @@ services:
 
   db:
     image: postgres:15
-    container_name: finance-db
+    container_name: finance-db-prod
     restart: always
     env_file:
-      - .env
+      - .env.production
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -27,27 +27,27 @@ services:
     volumes:
       - financeApp-postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 3s
       retries: 5
 
   app:
-    build: .
-    container_name: financeApp
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    container_name: financeApp-prod
     entrypoint: ["./docker-entrypoint.sh"]
-    command: npm run dev
+    command: node ./src/index.js
     env_file:
-      - .env
+      - .env.production
     environment:
       DATABASE_URL: ${DATABASE_URL}
       REDIS_URL: ${REDIS_URL}
-      NODE_ENV: development
+      NODE_ENV: production
       PORT: ${PORT}
     ports:
       - "${PORT}:${PORT}"
-    volumes:
-      - .:/app
     depends_on:
       cache:
         condition: service_healthy
@@ -56,4 +56,4 @@ services:
 
 volumes:
   financeApp-postgres-data:
-  redis-data:
+  redis-data: 
