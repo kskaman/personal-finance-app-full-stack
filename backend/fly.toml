@@ -1,32 +1,23 @@
-app = "personal-finance-backend"
-primary_region = "lax"
+# fly.toml app configuration file generated for personal-finance-backend on 2025-05-28T17:37:27-02:30
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'personal-finance-backend'
+primary_region = 'lax'
 
 [build]
-  dockerfile = "Dockerfile"
-
-[env]
-  PORT = "3000"
+  dockerfile = 'Dockerfile'
 
 [http_service]
   internal_port = 3000
   force_https = true
-  auto_stop_machines = true
+  auto_stop_machines = 'stop'
   auto_start_machines = true
-  min_machines_running = 1
-  processes = ["app"]
+  min_machines_running = 0
+  processes = ['app']
 
-[[services]]
-  protocol = "tcp"
-  internal_port = 3000
-  processes = ["app"]
-
-  [[services.ports]]
-    port = 80
-    handlers = ["http"]
-  [[services.ports]]
-    port = 443
-    handlers = ["tls", "http"]
-
-[mounts]
-  source = "finance_data"
-  destination = "/data" 
+[[vm]]
+  memory = '1gb'
+  cpu_kind = 'shared'
+  cpus = 1
