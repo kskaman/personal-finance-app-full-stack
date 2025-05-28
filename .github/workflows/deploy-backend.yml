@@ -1,0 +1,22 @@
+name: Deploy backend to Fly.io
+
+on:
+  push:
+    branches: [main] # change if you deploy from a different branch
+    paths:
+      - "./backend/**" # only redeploy when backend files change
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend # cd into backend/ before running flyctl
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: superfly/flyctl-actions@1.4
+        with:
+          args: "deploy --remote-only --app personal-finance-backend"
+        env:
+          FLY_API_TOKEN: ${{ secrets.FINANCE_FLY_API_TOKEN }}
