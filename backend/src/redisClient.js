@@ -7,7 +7,11 @@ const redisClient = createClient({
 
 redisClient.on("error", (err) => console.error("Redis error", err));
 redisClient.on("reconnecting", (d) =>
-  console.log(`Redis reconnect in ${d.delay} ms, attempt ${d.attempt}`)
+  console.log(
+    `Redis reconnect in ${d?.delay ?? "unknown"} ms, attempt ${
+      d?.attempt ?? unknown
+    }`
+  )
 );
 
 let isConnected = false;
