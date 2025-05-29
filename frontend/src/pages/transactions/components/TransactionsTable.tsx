@@ -11,7 +11,7 @@ import {
   useTheme,
 } from "@mui/material";
 import {
-  formatDateToReadableString,
+  convertDateObjectToReadableString,
   formatNumber,
   getInitials,
 } from "../../../utils/utilityFunctions";
@@ -198,7 +198,7 @@ const TransactionsTable = ({
                 >
                   <Typography>{txn.category}</Typography>
                   <Typography>
-                    {formatDateToReadableString(txn.date)}
+                    {convertDateObjectToReadableString(txn.date)}
                   </Typography>
                 </Stack>
               </TableCell>
@@ -248,7 +248,7 @@ const TransactionsTable = ({
                     fontSize: "12px",
                   }}
                 >
-                  {formatDateToReadableString(txn.date)}
+                  {convertDateObjectToReadableString(txn.date)}
                 </TableCell>
                 <TableCell
                   sx={{
