@@ -6,7 +6,7 @@ const RootRedirect = () => {
   const { user, authLoading } = useAuth();
 
   if (authLoading) return <Loader />;
-
+  console.log(user);
   return <Navigate to={user ? "/app/overview" : "/auth/login"} replace />;
 };
 
