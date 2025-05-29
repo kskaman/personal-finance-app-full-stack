@@ -9,7 +9,7 @@ redisClient.on("error", (err) => console.error("Redis error", err));
 redisClient.on("reconnecting", (d) =>
   console.log(
     `Redis reconnect in ${d?.delay ?? "unknown"} ms, attempt ${
-      d?.attempt ?? unknown
+      d?.attempt ?? "unknown"
     }`
   )
 );
