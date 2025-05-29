@@ -63,7 +63,7 @@ router.post("/reset-password", validateReset, resetPassword);
 router.post("/logout", authenticate, async (req, res) => {
   const sid = req.cookies.sid;
   if (sid) await redis.del(`SESSION:${sid}`);
-  res.clearCookie("sid", { httpOnly: true, sameSite: "lax" });
+  res.clearCookie("sid", { httpOnly: true, sameSite: "none" });
   res.json({ message: "Logged out" });
 });
 

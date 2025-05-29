@@ -176,7 +176,7 @@ export const login = async (req, res) => {
     res.cookie("sid", sid, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      sameSite: "none",
       maxAge: 1000 * 60 * 60 * 4, // 4 h
     });
 
@@ -338,7 +338,7 @@ export const deleteCurrentUser = async (req, res) => {
       await redis.del(`SESSION:${sid}`);
       res.clearCookie("sid", {
         httpOnly: true,
-        sameSite: "lax",
+        sameSite: "none",
         secure: process.env.NODE_ENV === "production",
       });
     }
