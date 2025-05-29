@@ -9,10 +9,25 @@ const app = express();
 app.use(cookieParser());
 
 // Enable CORS for requests from frontend
+const allowedOrigins = [
+  process.env.FRONTEND_URL ||
+    "https://personal-finance-app-full-stack.vercel.app",
+];
+
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL,
-    credentials: true, // allow cookies to be sent from frontend
+    origin: function (origin, callback) {
+      if (
+        !origin || // allow curl, Postman, SSR, etc.
+        allowedOrigins.includes(origin) || // production frontend
+        origin.endsWith(".vercel.app") // preview branches
+      ) {
+        callback(null, true); // Allow
+      } else {
+        callback(new Error(`CORS blocked: ${origin}`)); // Block
+      }
+    },
+    credentials: true,
   })
 );
 
