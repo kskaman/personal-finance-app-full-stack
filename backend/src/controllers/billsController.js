@@ -112,8 +112,77 @@ export const addBill = async (req, res) => {
   }
 };
 
-/* PUT /api/bills/:id */
-export const editBill = async (req, res) => {};
+export const editBill = async (req, res) => {
+  const { id } = req.params; // bill / recurringId
+  const userId = req.userId;
+  const { name, amount, dueDate, category } = req.body;
+
+  console.log("Editing bill:", { id, userId, name, amount, dueDate, category });
+  try {
+    const bill = await prisma.recurringBill.findFirst({
+      where: { id, userId },
+      select: { id: true },
+    });
+    if (!bill) return res.status(404).json({ message: "Bill not found" });
+
+    let categoryDefinitionId;
+    if (category !== undefined) {
+      const cat = await prisma.categoryDefinition.findFirst({
+        where: {
+          name: category,
+          OR: [{ creatorId: null }, { creatorId: userId }],
+        },
+        select: { id: true },
+      });
+      if (!cat) return res.status(400).json({ message: "Unknown category" });
+      categoryDefinitionId = cat.id;
+    }
+
+    const billData = {};
+    if (name !== undefined) billData.name = name;
+    if (amount !== undefined) billData.amount = amount;
+    if (dueDate !== undefined) billData.dueDate = dueDate;
+    if (categoryDefinitionId)
+      billData.categoryDefinitionId = categoryDefinitionId;
+
+    const txData = {};
+    if (name !== undefined) txData.name = name;
+    if (categoryDefinitionId !== undefined)
+      txData.categoryDefinitionId = categoryDefinitionId;
+
+    const [updatedBill, { count: rowsTouched }] = await prisma.$transaction([
+      prisma.recurringBill.update({
+        where: { id },
+        data: billData,
+        select: {
+          id: true,
+          name: true,
+          amount: true,
+          dueDate: true,
+          lastPaid: true,
+          theme: true,
+          category: { select: { name: true } },
+        },
+      }),
+      Object.keys(txData).length
+        ? prisma.transaction.updateMany({
+            where: { recurringId: id, userId },
+            data: txData,
+          })
+        : Promise.resolve({ count: 0 }),
+    ]);
+
+    console.log(rowsTouched);
+    return res.json({
+      ...updatedBill,
+      category: updatedBill.category?.name ?? null,
+      propagated: rowsTouched, // debugging aid
+    });
+  } catch (err) {
+    console.error("Error updating bill:", err);
+    return res.status(500).json({ message: "Server error" });
+  }
+};
 
 /* DELETE /api/bills/:id */
 export const deleteBill = async (req, res) => {
