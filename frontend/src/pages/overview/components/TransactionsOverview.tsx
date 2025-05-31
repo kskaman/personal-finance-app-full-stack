@@ -9,7 +9,7 @@ import {
 } from "@mui/material";
 
 import {
-  convertDateObjectToString,
+  convertDateObjectToReadableString,
   formatNumber,
   getInitials,
 } from "../../../utils/utilityFunctions";
@@ -125,7 +125,7 @@ const TransactionsOverview = ({
                   </Typography>
                 )}
                 <Typography fontSize="12px" color={theme.palette.primary.light}>
-                  {convertDateObjectToString(transaction.date)}
+                  {convertDateObjectToReadableString(transaction.date)}
                 </Typography>
               </Stack>
             </ListItem>

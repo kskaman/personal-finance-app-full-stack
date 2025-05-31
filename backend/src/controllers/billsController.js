@@ -172,6 +172,11 @@ export const editBill = async (req, res) => {
       },
     });
 
+    await prisma.transaction.updateMany({
+      where: { recurringId: id, userId: userId },
+      data: { name: updated.name, categoryDefinitionId: categoryDef.id },
+    });
+
     // Respond with readable category name
     return res.json({
       id: updated.id,
