@@ -14,7 +14,7 @@ services:
 
   db:
     image: postgres:15
-    container_name: finance-db-prod
+    container_name: finance-db
     restart: always
     env_file:
       - .env
@@ -35,16 +35,16 @@ services:
   app:
     build:
       context: .
-      dockerfile: Dockerfile.prod
-    container_name: financeApp-prod
+      dockerfile: Dockerfile
+    container_name: financeApp
     entrypoint: ["./docker-entrypoint.sh"]
     command: node ./src/index.js
     env_file:
-      - .env.production
+      - .env
     environment:
       DATABASE_URL: ${DATABASE_URL}
       REDIS_URL: ${REDIS_URL}
-      NODE_ENV: production
+      NODE_ENV: development
       PORT: ${PORT}
     ports:
       - "${PORT}:${PORT}"

@@ -2,8 +2,7 @@
 node_modules/
 npm-debug.log
 dist/
-.env.production
-.env.development
+.env
 
 # Prisma
 prisma/dev.db

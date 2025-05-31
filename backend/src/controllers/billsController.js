@@ -114,81 +114,73 @@ export const addBill = async (req, res) => {
 
 /* PUT /api/bills/:id */
 export const editBill = async (req, res) => {
-  const { id } = req.params;
+  const { id } = req.params; // bill / recurringId
   const userId = req.userId;
+  const { name, amount, dueDate, category } = req.body;
 
+  console.log("Editing bill:", { id, userId, name, amount, dueDate, category });
   try {
-    // Verify that the bill exists and belongs to the user
-    const existingBill = await prisma.recurringBill.findFirst({
+    const bill = await prisma.recurringBill.findFirst({
       where: { id, userId },
       select: { id: true },
     });
+    if (!bill) return res.status(404).json({ message: "Bill not found" });
 
-    if (!existingBill) {
-      return res.status(404).json({ message: "Bill not found" });
-    }
-
-    // Build the data object dynamically
-    const data = {};
-    if (req.body.name !== undefined) data.name = req.body.name;
-    if (req.body.amount !== undefined) data.amount = req.body.amount;
-    if (req.body.dueDate !== undefined) data.dueDate = req.body.dueDate;
-
-    // If category is being updated
-    if (req.body.category !== undefined) {
-      const categoryName = req.body.category;
-
-      // Try to find existing category definition (global or user-defined)
-      let categoryDef = await prisma.categoryDefinition.findFirst({
+    let categoryDefinitionId;
+    if (category !== undefined) {
+      const cat = await prisma.categoryDefinition.findFirst({
         where: {
-          name: categoryName,
+          name: category,
           OR: [{ creatorId: null }, { creatorId: userId }],
         },
+        select: { id: true },
       });
-
-      // If not found, create a new custom one for this user
-      if (!categoryDef) {
-        return res.status(400).json({ message: "Unknown category" });
-      }
-
-      // Assign to the bill
-      data.categoryDefinitionId = categoryDef.id;
+      if (!cat) return res.status(400).json({ message: "Unknown category" });
+      categoryDefinitionId = cat.id;
     }
 
-    // Update the bill
-    const updated = await prisma.recurringBill.update({
-      where: { id },
-      data,
-      select: {
-        id: true,
-        name: true,
-        amount: true,
-        dueDate: true,
-        lastPaid: true,
-        theme: true,
-        category: {
-          select: { name: true },
+    const billData = {};
+    if (name !== undefined) billData.name = name;
+    if (amount !== undefined) billData.amount = amount;
+    if (dueDate !== undefined) billData.dueDate = dueDate;
+    if (categoryDefinitionId)
+      billData.categoryDefinitionId = categoryDefinitionId;
+
+    const txData = {};
+    if (name !== undefined) txData.name = name;
+    if (categoryDefinitionId !== undefined)
+      txData.categoryDefinitionId = categoryDefinitionId;
+
+    const [updatedBill, { count: rowsTouched }] = await prisma.$transaction([
+      prisma.recurringBill.update({
+        where: { id },
+        data: billData,
+        select: {
+          id: true,
+          name: true,
+          amount: true,
+          dueDate: true,
+          lastPaid: true,
+          theme: true,
+          category: { select: { name: true } },
         },
-      },
-    });
+      }),
+      Object.keys(txData).length
+        ? prisma.transaction.updateMany({
+            where: { recurringId: id, userId },
+            data: txData,
+          })
+        : Promise.resolve({ count: 0 }),
+    ]);
 
-    await prisma.transaction.updateMany({
-      where: { recurringId: id, userId: userId },
-      data: { name: updated.name, categoryDefinitionId: categoryDef.id },
-    });
-
-    // Respond with readable category name
+    console.log(rowsTouched);
     return res.json({
-      id: updated.id,
-      name: updated.name,
-      amount: updated.amount,
-      dueDate: updated.dueDate,
-      lastPaid: updated.lastPaid,
-      theme: updated.theme,
-      category: updated.category?.name ?? null,
+      ...updatedBill,
+      category: updatedBill.category?.name ?? null,
+      propagated: rowsTouched, // debugging aid
     });
-  } catch (error) {
-    console.error("Error updating bill:", error);
+  } catch (err) {
+    console.error("Error updating bill:", err);
     return res.status(500).json({ message: "Server error" });
   }
 };

@@ -175,7 +175,7 @@ export const login = async (req, res) => {
     // 5. http-only cookie
     res.cookie("sid", sid, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: false,
       sameSite: "lax",
       maxAge: 1000 * 60 * 60 * 4, // 4 h
     });
@@ -339,7 +339,7 @@ export const deleteCurrentUser = async (req, res) => {
       res.clearCookie("sid", {
         httpOnly: true,
         sameSite: "lax",
-        secure: process.env.NODE_ENV === "production",
+        secure: false,
       });
     }
 
