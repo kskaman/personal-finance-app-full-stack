@@ -34,7 +34,6 @@ const UserAccountInfo = () => {
     if (!user) return;
     try {
       const newUser = await updateName(editedName.trim());
-      console.log(newUser.name);
       setUser(newUser);
 
       setIsEditingName(false);

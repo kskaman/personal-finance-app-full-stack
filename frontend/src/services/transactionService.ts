@@ -37,7 +37,6 @@ export const fetchLatestTransactions = async (): Promise<Transaction[]> => {
 }
 
 export const createTx = async (payload: TxProps) => {
-  console.log(payload);
   return await api.post("/transactions", payload);
 }
 

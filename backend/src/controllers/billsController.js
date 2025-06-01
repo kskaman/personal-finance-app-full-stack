@@ -117,7 +117,6 @@ export const editBill = async (req, res) => {
   const userId = req.userId;
   const { name, amount, dueDate, category } = req.body;
 
-  console.log("Editing bill:", { id, userId, name, amount, dueDate, category });
   try {
     const bill = await prisma.recurringBill.findFirst({
       where: { id, userId },
@@ -172,7 +171,6 @@ export const editBill = async (req, res) => {
         : Promise.resolve({ count: 0 }),
     ]);
 
-    console.log(rowsTouched);
     return res.json({
       ...updatedBill,
       category: updatedBill.category?.name ?? null,

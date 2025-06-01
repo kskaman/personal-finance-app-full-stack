@@ -203,8 +203,6 @@ const PotsPage = () => {
     );
   }
 
-  console.log(parentWidth);
-
   return (
     <>
       <SetTitle title="Pots" />
